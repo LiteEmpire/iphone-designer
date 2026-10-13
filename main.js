@@ -36,7 +36,7 @@ function buildPhone(){
  const logo=new THREE.Mesh(new THREE.CircleGeometry(.065,32),mats(state.finish==="metal"?"#dedee8":state.color,.4,.25));logo.position.set(0,-.08,-d/2-.008);phone.add(logo);
  caseMesh=addBox(phone,w+.045,h+.045,d+.035,0,0,0,new THREE.MeshPhysicalMaterial({color:"#d8d5e8",roughness:.17,metalness:0,transparent:true,opacity:.18,clearcoat:1,clearcoatRoughness:.1}),.115);caseMesh.visible=state.clearCase;
  stickerMesh=new THREE.Group();const starShape=new THREE.Shape();for(let i=0;i<10;i++){const a=i*Math.PI/5-Math.PI/2,r=i%2===0?.075:.035;const x=Math.cos(a)*r,y=Math.sin(a)*r;i===0?starShape.moveTo(x,y):starShape.lineTo(x,y);}starShape.closePath();const star=new THREE.Mesh(new THREE.ShapeGeometry(starShape),mats("#ffb7d3",.4));star.position.set(w*.25,-h*.24,-d/2-.015);stickerMesh.add(star);phone.add(stickerMesh);stickerMesh.visible=state.sticker;
- if(state.view==="front")phone.rotation.y=Math.PI;else phone.rotation.y=0;
+ if(state.view==="front")phone.rotation.y=0;else phone.rotation.y=Math.PI;
  phone.rotation.x=-.08;phone.scale.setScalar(Math.min(1.06,2.0/h));updateLabels();
 }
 function init(){
@@ -50,7 +50,7 @@ function init(){
  $("loadingLabel").hidden=true;animate();
 }
 function resize(){if(!renderer)return;const w=wrap.clientWidth,h=wrap.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
-function animate(){requestAnimationFrame(animate);if(!dragging&&phone)phone.rotation.y+=(state.view==="front"?Math.PI:0)-phone.rotation.y>Math.PI?0:0;renderer.render(scene,camera);}
+function animate(){requestAnimationFrame(animate);renderer.render(scene,camera);}
 function updateLabels(){$("previewTitle").textContent=state.model;$("previewSubtitle").textContent=state.colorName+" · "+state.finish[0].toUpperCase()+state.finish.slice(1)+" finish";$("finishName").textContent=state.colorName;$("finishDot").style.background=state.color;}
 function applyColor(hex,name){state.color=hex;state.colorName=name||"Custom color";buildPhone();document.querySelectorAll(".swatch").forEach(b=>b.classList.toggle("active",b.dataset.color.toLowerCase()===hex.toLowerCase()));$("customColor").value=hex;updateLabels();}
 function snapshot(){return {...state,name:$("designName").value.trim()||"My dream iPhone"}}
@@ -64,9 +64,9 @@ document.querySelectorAll(".swatch").forEach(b=>b.addEventListener("click",()=>a
 $("customColor").addEventListener("input",e=>applyColor(e.target.value,"Custom color"));
 document.querySelectorAll(".segment").forEach(b=>b.addEventListener("click",()=>{state.finish=b.dataset.finish;document.querySelectorAll(".segment").forEach(x=>x.classList.toggle("active",x===b));buildPhone()}));
 $("caseToggle").addEventListener("change",e=>{state.clearCase=e.target.checked;buildPhone()});$("stickerToggle").addEventListener("change",e=>{state.sticker=e.target.checked;buildPhone()});
-$("frontView").onclick=()=>{state.view="front";phone.rotation.y=Math.PI;document.querySelectorAll(".view-buttons button").forEach(b=>b.classList.remove("active"));$("frontView").classList.add("active")};
-$("backView").onclick=()=>{state.view="back";phone.rotation.y=0;document.querySelectorAll(".view-buttons button").forEach(b=>b.classList.remove("active"));$("backView").classList.add("active")};
-$("resetView").onclick=()=>{phone.rotation.set(-.08,state.view==="front"?Math.PI:0,0);camera.position.z=6.1};
+$("frontView").onclick=()=>{state.view="front";phone.rotation.y=0;document.querySelectorAll(".view-buttons button").forEach(b=>b.classList.remove("active"));$("frontView").classList.add("active")};
+$("backView").onclick=()=>{state.view="back";phone.rotation.y=Math.PI;document.querySelectorAll(".view-buttons button").forEach(b=>b.classList.remove("active"));$("backView").classList.add("active")};
+$("resetView").onclick=()=>{phone.rotation.set(-.08,state.view==="front"?0:Math.PI,0);camera.position.z=6.1};
 $("saveDesign").onclick=saveDesign;$("saveTop").onclick=saveDesign;$("clearSaved").onclick=()=>{if(confirm("Clear all saved designs from this browser?")){localStorage.removeItem("phonelab-designs");renderSaved()}};
 $("resetDesign").onclick=()=>{Object.assign(state,{model:"iPhone 17 Pro",color:"#f4f0e9",colorName:"Starlight",finish:"matte",clearCase:false,sticker:false,name:"My dream iPhone",view:"front"});$("modelSelect").value=state.model;$("designName").value=state.name;$("caseToggle").checked=false;$("stickerToggle").checked=false;document.querySelectorAll(".segment").forEach(b=>b.classList.toggle("active",b.dataset.finish==="matte"));applyColor(state.color,state.colorName);$("frontView").click();showToast("Design reset")};
 $("downloadImage").onclick=()=>{renderer.render(scene,camera);const a=document.createElement("a");a.download=(snapshot().name||"phone-design").toLowerCase().replace(/[^a-z0-9]+/g,"-")+".png";a.href=renderer.domElement.toDataURL("image/png");a.click();showToast("Image exported!")};
