@@ -150,7 +150,7 @@ function buildPhone(){
  // Bottom edge: USB-C on iPhone 15 and newer, Lightning on earlier models; simplified port and speaker perforations.
  const portMat=mats("#161922",.3,.2);
  const usbC=Number((state.model.match(/iPhone (\d+)/)||[])[1]||0)>=15 || state.model==="iPhone 17" || state.model==="iPhone 17 Pro" || state.model==="iPhone 17 Pro Max" || state.model==="My concept phone";
- addSlot(phone,usbC?.19:.16,.035,.012,0,-h/2-.002,d*.02,portMat);
+ addSlot(phone,usbC ? .19 : .16,.035,.012,0,-h/2-.002,d*.02,portMat);
  for(let i=0;i<4;i++){
    const xx=-w*.32+i*w*.075;
    addDisc(phone,.012,.012,xx,-h/2-.001,d*.02,portMat,12);
