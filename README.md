@@ -6,7 +6,8 @@ A colorful, browser-based 3D phone concept configurator built with HTML, CSS, Ja
 
 - Interactive 3D phone preview with pointer-drag rotation and scroll zoom
 - Front and back view controls
-- Multiple iPhone-inspired model presets, from older generations to newer ones
+- Model-specific body proportions and published height/width/depth dimensions for each listed preset
+- Generation-specific front details, camera island shapes/layouts, and side-control placement
 - Color swatches and a custom color picker
 - Matte, glossy, and metal finishes
 - Optional clear case and star sticker
@@ -28,7 +29,7 @@ Open `index.html` with a local static web server (recommended for ES modules), s
 
 ## Notes
 
-- The device geometry is a procedural concept model. Model names select size/camera presets; they are not exact official CAD replicas.
+- The procedural geometry uses model-specific dimensions and visual layouts informed by Apple's published comparison/specification pages. It is still an approximation, not an exact manufacturer CAD mesh; tiny details, exact curvature, materials, and camera dimensions may differ.
 - Designs are saved only in the current browser on the current device. There is no account or cloud sync.
 - PNG export captures the 3D canvas.
 - This is an independent fan-made concept and is not affiliated with, endorsed by, or sponsored by Apple. iPhone is a trademark of Apple Inc.
