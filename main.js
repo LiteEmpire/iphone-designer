@@ -41,6 +41,11 @@ function roundedBox(w,h,d,r,material){
 function addBox(parent,w,h,d,x,y,z,mat,r=.02){const mesh=roundedBox(w,h,d,r,mat);mesh.position.set(x,y,z);parent.add(mesh);return mesh;}
 function addDisc(parent,r,depth,x,y,z,mat,segments=32){const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,depth,segments),mat);mesh.rotation.x=Math.PI/2;mesh.position.set(x,y,z);parent.add(mesh);return mesh;}
 function addSlot(parent,w,h,d,x,y,z,mat){return addBox(parent,w,h,d,x,y,z,mat,Math.min(w,h)*.48);}
+function addSideSlot(parent, side, width, height, protrusion, x, y, z, material) {
+ const mesh=roundedBox(width,height,protrusion,Math.min(width,height)*.45,material);
+ mesh.rotation.y=side==="right"?Math.PI/2:-Math.PI/2;
+ mesh.position.set(x,y,z);parent.add(mesh);return mesh;
+}
 function cameraLens(parent,x,y,z,r,scale=1){
  const rim=mats("#171923",.24,.42),glass=mats("#243c60",.12,.32),glint=mats("#83bce9",.14,.22);
  addDisc(parent,r*1.16,.025,x,y,z,rim,40);addDisc(parent,r,.016,x,y,z-.018,glass,40);
@@ -48,59 +53,64 @@ function cameraLens(parent,x,y,z,r,scale=1){
  const inner=new THREE.Mesh(new THREE.CircleGeometry(r*.12,16),mats("#111b30",.1,.1));inner.position.set(x+r*.18,y-r*.18,z-.03);parent.add(inner);
 }
 function addCameraIsland(parent,cfg,w,h,d,metalColor){
- const z=-d/2-.022, x0=-w*.29, y0=h*.335;
- const islandMat=mats(cfg.family==="pro17"?"#777b82":metalColor,.42,.28);
- const lensMat=mats("#11141c",.2,.35);
+ const z=-d/2-.014, x0=-w*.285, y0=h*.325;
+ const islandColor=cfg.family==="base11" || cfg.family==="base12" || cfg.family==="base13" || cfg.family==="base14" || cfg.family==="base15" || cfg.family==="base16" || cfg.family==="base17" ? state.color : metalColor;
+ const islandMat=mats(islandColor,.4,.18);
+ const darkIsland=mats("#10131b",.25,.18);
+ const lensR=w*.068;
  if(cfg.camStyle==="bar"){
-   // The 17 Pro family uses a wide, horizontal camera plateau rather than the older compact square.
-   addBox(parent,w*.88,.48,.075,0,y0,z-.015,islandMat,.10);
-   const p=[[x0-.015,y0+.11],[x0+.18,y0+.11],[x0+.08,y0-.13]];
-   p.forEach(([x,y])=>cameraLens(parent,x,y,z-.065,.085));
-   addDisc(parent,.036,.018,w*.32,y0+.13,z-.065,mats("#f6f0dc",.2,.05),24);
-   addDisc(parent,.021,.018,w*.32,y0-.12,z-.065,mats("#242833",.2,.1),24);
+   // 17 Pro generation: wide horizontal camera plateau, with the camera cluster on the left.
+   addBox(parent,w*.91,h*.215,.045,0,y0,z,islandMat,w*.07);
+   cameraLens(parent,-w*.30,y0+h*.045,z-.035,lensR);
+   cameraLens(parent,-w*.125,y0+h*.045,z-.035,lensR);
+   cameraLens(parent,-w*.30,y0-h*.055,z-.035,lensR);
+   addDisc(parent,w*.035,.018,w*.245,y0+h*.045,z-.037,mats("#f8f1dd",.22),28);
+   addDisc(parent,w*.022,.016,w*.245,y0-h*.055,z-.037,darkIsland,24);
    return;
  }
  if(cfg.camStyle==="verticalPill"){
-   addBox(parent,.32,.62,.055,x0,y0,z,islandMat,.15);
-   cameraLens(parent,x0,y0+.13,z-.042,.082);
-   cameraLens(parent,x0,y0-.13,z-.042,.082);
-   addDisc(parent,.027,.015,x0+.18,y0-.12,z-.043,mats("#fff0c9",.25),24);
-   addDisc(parent,.014,.015,x0+.18,y0+.12,z-.043,mats("#303541",.2),20);
+   addBox(parent,w*.32,h*.235,.045,x0,y0,z,islandMat,w*.14);
+   cameraLens(parent,x0,y0+h*.052,z-.035,lensR);
+   cameraLens(parent,x0,y0-h*.052,z-.035,lensR);
+   addDisc(parent,w*.027,.014,x0+w*.095,y0-h*.052,z-.037,mats("#fff0c9",.22),24);
+   addDisc(parent,w*.014,.014,x0+w*.095,y0+h*.052,z-.037,darkIsland,20);
    return;
  }
- if(cfg.camStyle==="squareTriple" || cfg.camStyle==="squareDual"){
-   const size=cfg.camStyle==="squareTriple"?.52:.47;
-   addBox(parent,size,size,.065,x0,y0,z,islandMat,.09);
-   if(cfg.camStyle==="squareTriple"){
-     cameraLens(parent,x0-.12,y0+.13,z-.055,.078);
-     cameraLens(parent,x0+.12,y0+.13,z-.055,.078);
-     cameraLens(parent,x0-.12,y0-.12,z-.055,.078);
-     addDisc(parent,.028,.018,x0+.13,y0-.12,z-.055,mats("#fff0c9",.22),24);
-     addDisc(parent,.017,.018,x0+.13,y0-.005,z-.055,mats("#252a35",.2),20);
-   } else {
-     cameraLens(parent,x0-.11,y0+.12,z-.055,.078);
-     cameraLens(parent,x0+.11,y0-.12,z-.055,.078);
-     addDisc(parent,.027,.018,x0+.13,y0+.12,z-.055,mats("#fff0c9",.22),24);
-   }
+ if(cfg.camStyle==="squareTriple"){
+   addBox(parent,w*.49,h*.245,.05,x0,y0,z,islandMat,w*.065);
+   cameraLens(parent,x0-w*.105,y0+h*.052,z-.04,lensR);
+   cameraLens(parent,x0+w*.105,y0+h*.052,z-.04,lensR);
+   cameraLens(parent,x0-w*.105,y0-h*.052,z-.04,lensR);
+   addDisc(parent,w*.031,.016,x0+w*.105,y0-h*.052,z-.042,mats("#fff0c9",.22),24);
+   addDisc(parent,w*.018,.016,x0+w*.105,y0,z-.042,darkIsland,20);
+   return;
+ }
+ if(cfg.camStyle==="squareDual"){
+   addBox(parent,w*.46,h*.235,.05,x0,y0,z,islandMat,w*.065);
+   cameraLens(parent,x0-w*.085,y0+h*.05,z-.04,lensR*1.03);
+   cameraLens(parent,x0+w*.085,y0-h*.05,z-.04,lensR*1.03);
+   addDisc(parent,w*.028,.016,x0+w*.10,y0+h*.05,z-.042,mats("#fff0c9",.22),24);
    return;
  }
  if(cfg.camStyle==="diagonal"){
-   addBox(parent,.43,.47,.06,x0,y0,z,islandMat,.09);
-   cameraLens(parent,x0-.095,y0+.105,z-.05,.078);
-   cameraLens(parent,x0+.095,y0-.105,z-.05,.078);
-   addDisc(parent,.027,.016,x0+.105,y0+.12,z-.052,mats("#fff0c9",.22),24);
-   addDisc(parent,.013,.016,x0-.12,y0-.12,z-.052,mats("#2b303a",.2),20);
+   addBox(parent,w*.405,h*.205,.045,x0,y0,z,islandMat,w*.07);
+   cameraLens(parent,x0-w*.083,y0+h*.047,z-.035,lensR);
+   cameraLens(parent,x0+w*.083,y0-h*.047,z-.035,lensR);
+   addDisc(parent,w*.028,.014,x0+w*.095,y0+h*.047,z-.037,mats("#fff0c9",.22),24);
+   addDisc(parent,w*.014,.014,x0-w*.095,y0-h*.047,z-.037,darkIsland,20);
    return;
  }
  if(cfg.camStyle==="vertical"){
-   addBox(parent,.30,.55,.05,x0,y0,z,islandMat,.07);
-   cameraLens(parent,x0,y0+.12,z-.043,.075);cameraLens(parent,x0,y0-.12,z-.043,.075);
-   addDisc(parent,.022,.014,x0+.12,y0-.12,z-.044,mats("#fff0c9",.2),20);
+   addBox(parent,w*.30,h*.245,.045,x0,y0,z,islandMat,w*.06);
+   cameraLens(parent,x0,y0+h*.053,z-.035,lensR);
+   cameraLens(parent,x0,y0-h*.053,z-.035,lensR);
+   // On the X / XS family, the flash sits between the two vertically stacked lenses.
+   addDisc(parent,w*.025,.014,x0+w*.10,y0,z-.037,mats("#fff0c9",.22),24);
    return;
  }
- // iPhone 8 / SE: single camera without a large multi-camera island.
- cameraLens(parent,x0,y0,z-.02,.085);
- addDisc(parent,.027,.014,x0+.14,y0,z-.022,mats("#fff0c9",.2),24);
+ // iPhone 8 / SE: one rear camera with a small individual rim, not a multi-camera island.
+ cameraLens(parent,x0,y0,z-.025,lensR*1.08);
+ addDisc(parent,w*.026,.014,x0+w*.105,y0,z-.027,mats("#fff0c9",.22),24);
 }
 function buildPhone(){
  if(phone)scene.remove(phone);
@@ -112,57 +122,64 @@ function buildPhone(){
  const frameColor=finishMetal?"#c3c6ce":state.color;
  const metal=mats(frameColor,state.finish==="matte"?.72:state.finish==="glossy"?.13:.28,finishMetal?.82:.42);
  bodyMat=metal;
- // Outer frame and generation-appropriate corner profile.
+ // Aluminum / titanium-like frame, with generation-specific roundedness.
  addBox(phone,w,h,d,0,0,0,metal,cfg.corner);
  const backColor=mats(state.color,state.finish==="glossy"?.16:state.finish==="matte"?.72:.32,finishMetal?.15:.03);
- addBox(phone,w-.035,h-.035,.012,0,0,-d/2-.003,backColor,Math.max(.045,cfg.corner-.018));
- // Front glass is inset by the model's characteristic bezel amount.
- const screen=mats("#070910",.16,.06);screenMat=screen;
- const sw=w-cfg.bezel*2, sh=h-cfg.bezel*2;
- addBox(phone,sw,sh,.014,0,0,d/2+.006,screen,Math.max(.04,cfg.corner-cfg.bezel*.6));
- const edge=mats("#090b12",.2,.2);
- if(cfg.screen==="island"){
-   addSlot(phone,w*.27,.074,.016,0,h*.405,d/2+.019,edge);
-   addDisc(phone,.015,.015,w*.102,h*.405,d/2+.02,mats("#19253c",.2,.2),24);
- } else if(cfg.screen==="notch"||cfg.screen==="notchSmall"){
-   const notchW=cfg.screen==="notchSmall"?w*.34:w*.39;
-   addSlot(phone,notchW,.105,.018,0,h*.425,d/2+.02,edge);
-   addDisc(phone,.017,.015,notchW*.25,h*.425,d/2+.022,mats("#1b2b45",.2,.2),24);
-   addBox(phone,notchW*.25,.009,.016,0,h*.385,d/2+.02,mats("#282b34",.25,.1),.004);
- } else {
-   // iPhone 8 / SE have broad top and bottom bezels with a circular Home button.
-   addSlot(phone,w*.23,.018,.014,0,h*.405,d/2+.02,edge);
+ addBox(phone,w-.018,h-.018,.012,0,0,-d/2-.004,backColor,Math.max(.045,cfg.corner-.012));
+ const screenGlass=mats("#05070d",.14,.08);
+ addBox(phone,w-.018,h-.018,.012,0,0,d/2+.004,screenGlass,Math.max(.045,cfg.corner-.012));
+ const screen=mats("#080b13",.13,.05);screenMat=screen;
+ const bezel=cfg.bezel;
+ if(cfg.screen==="home"){
+   // The 4.7-inch Home-button designs have visibly broad top and bottom bezels and a 16:9 display.
+   addBox(phone,w*.84,h*.685,.008,0,h*.015,d/2+.012,screen,w*.045);
+   addSlot(phone,w*.25,.025,.012,0,h*.405,d/2+.016,mats("#151923",.2,.2));
    const homeR=w*.095;
-   addDisc(phone,homeR,.018,0,-h*.405,d/2+.02,mats("#171923",.28,.18),40);
-   const homeRing=new THREE.Mesh(new THREE.TorusGeometry(homeR*.72,.004,8,40),mats("#52535a",.28,.3));
-   homeRing.position.set(0,-h*.405,d/2+.033);phone.add(homeRing);
+   addDisc(phone,homeR,.018,0,-h*.405,d/2+.014,mats("#171923",.28,.18),40);
+   const homeRing=new THREE.Mesh(new THREE.TorusGeometry(homeR*.72,.004,8,40),mats("#5a5c64",.28,.3));
+   homeRing.position.set(0,-h*.405,d/2+.027);phone.add(homeRing);
+ } else {
+   const sw=w-bezel*2, sh=h-bezel*2;
+   addBox(phone,sw,sh,.008,0,0,d/2+.012,screen,Math.max(.04,cfg.corner-bezel*.6));
+   const edge=mats("#090b12",.2,.2);
+   if(cfg.screen==="island"){
+     addSlot(phone,w*.265,.066,.014,0,h*.405,d/2+.021,edge);
+     addDisc(phone,w*.016,.014,w*.102,h*.405,d/2+.022,mats("#19253c",.2,.2),24);
+   } else {
+     const notchW=cfg.screen==="notchSmall"?w*.325:w*.385;
+     const notchH=cfg.screen==="notchSmall"?.09:.105;
+     addSlot(phone,notchW,notchH,.014,0,h*.425,d/2+.021,edge);
+     addDisc(phone,w*.017,.014,notchW*.255,h*.425,d/2+.022,mats("#1b2b45",.2,.2),24);
+     addBox(phone,notchW*.22,.008,.012,0,h*.385,d/2+.022,mats("#282b34",.25,.1),.004);
+   }
  }
- // Side controls: older generations have a mute switch; Action button and Camera Control appear only on supported families.
- const btnDepth=d*.46;
- addSlot(phone,.025,.19,btnDepth,w/2+.006,h*.20,0,metal);
- if(cfg.cameraControl) addSlot(phone,.022,.16,btnDepth,w/2+.007,-h*.06,0,metal);
- if(cfg.action) addSlot(phone,.025,.075,btnDepth,-w/2-.006,h*.28,0,metal);
- else addSlot(phone,.024,.055,btnDepth,-w/2-.006,h*.31,0,metal);
- addSlot(phone,.025,.15,btnDepth,-w/2-.006,h*.12,0,metal);
- addSlot(phone,.025,.15,btnDepth,-w/2-.006,-h*.02,0,metal);
- // Back camera layout varies by model generation, not just by lens count.
+ // Side controls are mounted to the side rails, not laid flat on the front glass.
+ const buttonMat=mats(finishMetal?"#d1d3d9":state.color,.3,.55);
+ const rightX=w/2+.008,leftX=-w/2-.008,sideDepth=d*.42;
+ addSideSlot(phone,"right",sideDepth,.17,.024,rightX,h*.205,0,buttonMat);
+ if(cfg.cameraControl) addSideSlot(phone,"right",sideDepth,.145,.024,rightX,-h*.075,0,buttonMat);
+ if(cfg.action) addSideSlot(phone,"left",sideDepth,.072,.024,leftX,h*.285,0,buttonMat);
+ else addSideSlot(phone,"left",sideDepth,.052,.024,leftX,h*.315,0,buttonMat);
+ addSideSlot(phone,"left",sideDepth,.135,.024,leftX,h*.135,0,buttonMat);
+ addSideSlot(phone,"left",sideDepth,.135,.024,leftX,-h*.015,0,buttonMat);
+ // Bottom port and speaker/microphone perforations.
+ const portMat=mats("#11141b",.3,.2);
+ const gen=Number((state.model.match(/iPhone (\d+)/)||[])[1]||0);
+ const usbC=gen>=15 || state.model==="My concept phone";
+ addSlot(phone,usbC?w*.205:w*.17,.028,.012,0,-h/2-.003,d*.02,portMat);
+ for(let i=0;i<5;i++){
+   const xx=-w*.32+i*w*.065;
+   addDisc(phone,w*.010,.012,xx,-h/2-.002,d*.02,portMat,12);
+   addDisc(phone,w*.010,.012,-xx,-h/2-.002,d*.02,portMat,12);
+ }
  addCameraIsland(phone,cfg,w,h,d,finishMetal?"#b7bac4":state.color);
- // Bottom edge: USB-C on iPhone 15 and newer, Lightning on earlier models; simplified port and speaker perforations.
- const portMat=mats("#161922",.3,.2);
- const usbC=Number((state.model.match(/iPhone (\d+)/)||[])[1]||0)>=15 || state.model==="iPhone 17" || state.model==="iPhone 17 Pro" || state.model==="iPhone 17 Pro Max" || state.model==="My concept phone";
- addSlot(phone,usbC ? .19 : .16,.035,.012,0,-h/2-.002,d*.02,portMat);
- for(let i=0;i<4;i++){
-   const xx=-w*.32+i*w*.075;
-   addDisc(phone,.012,.012,xx,-h/2-.001,d*.02,portMat,12);
-   addDisc(phone,.012,.012,-xx,-h/2-.001,d*.02,portMat,12);
- }
- // Subtle Apple-like centered mark is intentionally generic, not an official logo asset.
+ // Subtle centered back mark, kept generic so the preview remains a customizable concept.
  const logoMat=mats(finishMetal?"#e1e2e8":state.colorName==="Midnight"?"#34363d":"#b6b7bd",.42,.18);
- const logo=new THREE.Mesh(new THREE.CircleGeometry(.058,32),logoMat);logo.position.set(0,-.08,-d/2-.012);phone.add(logo);
- caseMesh=addBox(phone,w+.045,h+.045,d+.035,0,0,0,new THREE.MeshPhysicalMaterial({color:"#d8d5e8",roughness:.17,metalness:0,transparent:true,opacity:.18,clearcoat:1,clearcoatRoughness:.1}),cfg.corner+.02);
+ const logo=new THREE.Mesh(new THREE.CircleGeometry(w*.055,32),logoMat);logo.position.set(0,-h*.08,-d/2-.013);phone.add(logo);
+ caseMesh=addBox(phone,w+.035,h+.035,d+.03,0,0,0,new THREE.MeshPhysicalMaterial({color:"#d8d5e8",roughness:.17,metalness:0,transparent:true,opacity:.16,clearcoat:1,clearcoatRoughness:.1}),cfg.corner+.018);
  caseMesh.visible=state.clearCase;
  stickerMesh=new THREE.Group();const starShape=new THREE.Shape();
- for(let i=0;i<10;i++){const a=i*Math.PI/5-Math.PI/2,r=i%2===0?.075:.035,x=Math.cos(a)*r,y=Math.sin(a)*r;i===0?starShape.moveTo(x,y):starShape.lineTo(x,y);}
+ for(let i=0;i<10;i++){const a=i*Math.PI/5-Math.PI/2,r=i%2===0?w*.078:w*.036,x=Math.cos(a)*r,y=Math.sin(a)*r;i===0?starShape.moveTo(x,y):starShape.lineTo(x,y);}
  starShape.closePath();const star=new THREE.Mesh(new THREE.ShapeGeometry(starShape),mats("#ffb7d3",.4));
  star.position.set(w*.25,-h*.24,-d/2-.018);stickerMesh.add(star);phone.add(stickerMesh);stickerMesh.visible=state.sticker;
  phone.rotation.set(-.08,state.view==="front"?0:Math.PI,0);
