@@ -21,7 +21,7 @@ test("3D preview boots and core design controls work", async ({ page }) => {
 
   await page.locator("#caseToggle").check();
   await page.locator("#stickerToggle").check();
-  await page.getByRole("button", { name: "Save design" }).click();
+  await page.locator("#saveDesign").click();
   await expect(page.locator("#savedCount")).toHaveText("1");
   await expect(page.locator("#savedDesigns")).toContainText("iPhone 15 Pro");
 
