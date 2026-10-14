@@ -27,6 +27,26 @@ const models = {
  "iPhone SE (2nd / 3rd gen)": {mm:[138.4,67.3,7.3],family:"home",edge:"round",screen:"home",cams:1,camStyle:"single",action:false,cameraControl:false,corner:.13,bezel:.095},
  "My concept phone": {mm:[150,72,8.2],family:"concept",edge:"flat",screen:"island",cams:3,camStyle:"squareTriple",action:true,cameraControl:true,corner:.11,bezel:.04}
 };
+const appleModelSlugs = {
+ "iPhone 17 Pro":"iphone-17-pro",
+ "iPhone 17 Pro Max":"iphone-17-pro-max",
+ "iPhone 17":"iphone-17",
+ "iPhone 16 Pro":"iphone-16-pro",
+ "iPhone 16 Pro Max":"iphone-16-pro-max",
+ "iPhone 16":"iphone-16",
+ "iPhone 15 Pro":"iphone-15-pro",
+ "iPhone 15 Pro Max":"iphone-15-pro-max",
+ "iPhone 15":"iphone-15",
+ "iPhone 14 Pro":"iphone-14-pro",
+ "iPhone 14":"iphone-14",
+ "iPhone 13":"iphone-13",
+ "iPhone 12":"iphone-12",
+ "iPhone 11":"iphone-11",
+ "iPhone XS":"iphone-xs",
+ "iPhone X":"iphone-x",
+ "iPhone 8":"iphone-8",
+ "iPhone SE (2nd / 3rd gen)":"iphone-se-3rd-generation"
+};
 let scene,camera,renderer,phone,bodyMat,screenMat,caseMesh,stickerMesh,dragging=false,lastX=0,lastY=0,toastTimer;
 const mats=(color,rough=.35,metal=0)=>new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});
 function roundedBox(w,h,d,r,material){
@@ -215,7 +235,7 @@ function init(){
 }
 function resize(){if(!renderer)return;const w=wrap.clientWidth,h=wrap.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 function animate(){requestAnimationFrame(animate);renderer.render(scene,camera);}
-function updateLabels(){const cfg=models[state.model]||models["iPhone 17 Pro"];$("previewTitle").textContent=state.model;$("previewSubtitle").textContent=cfg.mm[0].toFixed(1)+" × "+cfg.mm[1].toFixed(1)+" × "+cfg.mm[2].toFixed(2)+" mm · "+state.colorName+" · "+state.finish[0].toUpperCase()+state.finish.slice(1);$("finishName").textContent=state.colorName;$("finishDot").style.background=state.color;}
+function updateLabels(){const cfg=models[state.model]||models["iPhone 17 Pro"];$("previewTitle").textContent=state.model;$("previewSubtitle").textContent=cfg.mm[0].toFixed(1)+" × "+cfg.mm[1].toFixed(1)+" × "+cfg.mm[2].toFixed(2)+" mm · "+state.colorName+" · "+state.finish[0].toUpperCase()+state.finish.slice(1);const ref=$("specReference");if(ref){const slug=appleModelSlugs[state.model];ref.href=slug?"https://www.apple.com/ae/iphone/compare/?modelList="+encodeURIComponent(slug):"https://www.apple.com/ae/iphone/compare/";ref.textContent=slug?"Official Apple specs & comparison ↗":"Browse official Apple specifications ↗";} $("finishName").textContent=state.colorName;$("finishDot").style.background=state.color;}
 function applyColor(hex,name){state.color=hex;state.colorName=name||"Custom color";buildPhone();document.querySelectorAll(".swatch").forEach(b=>b.classList.toggle("active",b.dataset.color.toLowerCase()===hex.toLowerCase()));$("customColor").value=hex;updateLabels();}
 function snapshot(){return {...state,name:$("designName").value.trim()||"My dream iPhone"}}
 function showToast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),2200);}
