@@ -49,7 +49,7 @@ function addSideSlot(parent, side, width, height, protrusion, x, y, z, material)
 function cameraLens(parent,x,y,z,r,scale=1){
  const rim=mats("#171923",.24,.42),glass=mats("#243c60",.12,.32),glint=mats("#83bce9",.14,.22);
  addDisc(parent,r*1.16,.025,x,y,z,rim,40);addDisc(parent,r,.016,x,y,z-.018,glass,40);
- const shine=new THREE.Mesh(new THREE.CircleGeometry(r*.24,20),glint);shine.position.set(x-r*.25,y+r*.25,z-.029);parent.add(shine);
+ const shine=new THREE.Mesh(new THREE.CircleGeometry(r*.24,20),glint);shine.position.set(x-r*.25,y+r*.25,z-.029);shine.rotation.y=Math.PI;parent.add(shine);
  const inner=new THREE.Mesh(new THREE.CircleGeometry(r*.12,16),mats("#111b30",.1,.1));inner.position.set(x+r*.18,y-r*.18,z-.03);parent.add(inner);
 }
 function addCameraIsland(parent,cfg,w,h,d,metalColor){
@@ -173,9 +173,23 @@ function buildPhone(){
    addDisc(phone,w*.010,.012,-xx,-h/2-.002,d*.02,portMat,12);
  }
  addCameraIsland(phone,cfg,w,h,d,finishMetal?"#b7bac4":state.color);
- // Subtle centered back mark, kept generic so the preview remains a customizable concept.
- const logoMat=mats(finishMetal?"#e1e2e8":state.colorName==="Midnight"?"#34363d":"#b6b7bd",.42,.18);
- const logo=new THREE.Mesh(new THREE.CircleGeometry(w*.055,32),logoMat);logo.position.set(0,-h*.08,-d/2-.013);phone.add(logo);
+ // Small Apple-like silhouette on the rear glass, oriented toward the back-view camera.
+ const logoMat=mats(finishMetal?"#e1e2e8":state.colorName==="Midnight"?"#34363d":"#a9abb2",.42,.18);
+ const lr=w*.061, logoShape=new THREE.Shape();
+ logoShape.moveTo(0,-lr*.9);
+ logoShape.bezierCurveTo(-lr*.43,-lr*.88,-lr*.83,-lr*.5,-lr*.78,-lr*.08);
+ logoShape.bezierCurveTo(-lr*.74,lr*.42,-lr*.38,lr*.72,-lr*.08,lr*.55);
+ logoShape.bezierCurveTo(lr*.12,lr*.68,lr*.47,lr*.65,lr*.64,lr*.34);
+ logoShape.bezierCurveTo(lr*.77,lr*.11,lr*.57,-lr*.02,lr*.47,lr*.12);
+ logoShape.bezierCurveTo(lr*.34,lr*.3,lr*.45,lr*.49,lr*.61,lr*.5);
+ logoShape.bezierCurveTo(lr*.43,lr*.8,lr*.18,lr*.86,0,lr*.64);
+ logoShape.bezierCurveTo(-lr*.2,lr*.84,-lr*.48,lr*.74,-lr*.61,lr*.5);
+ logoShape.bezierCurveTo(-lr*.79,lr*.25,-lr*.78,-lr*.4,0,-lr*.9);
+ logoShape.closePath();
+ const logo=new THREE.Mesh(new THREE.ShapeGeometry(logoShape),logoMat);
+ logo.position.set(0,-h*.08,-d/2-.014);logo.rotation.y=Math.PI;phone.add(logo);
+ const leafShape=new THREE.Shape();leafShape.moveTo(lr*.06,lr*.68);leafShape.quadraticCurveTo(lr*.1,lr*1.03,lr*.43,lr*.94);leafShape.quadraticCurveTo(lr*.4,lr*.69,lr*.06,lr*.68);
+ const leaf=new THREE.Mesh(new THREE.ShapeGeometry(leafShape),logoMat);leaf.position.set(0,-h*.08,-d/2-.014);leaf.rotation.y=Math.PI;phone.add(leaf);
  caseMesh=addBox(phone,w+.035,h+.035,d+.03,0,0,0,new THREE.MeshPhysicalMaterial({color:"#d8d5e8",roughness:.17,metalness:0,transparent:true,opacity:.16,clearcoat:1,clearcoatRoughness:.1}),cfg.corner+.018);
  caseMesh.visible=state.clearCase;
  stickerMesh=new THREE.Group();const starShape=new THREE.Shape();
