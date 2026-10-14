@@ -157,7 +157,7 @@ function buildPhone(){
  const buttonMat=mats(finishMetal?"#d1d3d9":state.color,.3,.55);
  const rightX=w/2+.008,leftX=-w/2-.008,sideDepth=d*.42;
  addSideSlot(phone,"right",sideDepth,.17,.024,rightX,h*.205,0,buttonMat);
- if(cfg.cameraControl) addSideSlot(phone,"right",sideDepth,.145,.024,rightX,-h*.075,0,buttonMat);
+ if(cfg.cameraControl) addSideSlot(phone,"right",sideDepth,.145,.024,rightX,-h*.28,0,buttonMat);
  if(cfg.action) addSideSlot(phone,"left",sideDepth,.072,.024,leftX,h*.285,0,buttonMat);
  else addSideSlot(phone,"left",sideDepth,.052,.024,leftX,h*.315,0,buttonMat);
  addSideSlot(phone,"left",sideDepth,.135,.024,leftX,h*.135,0,buttonMat);
