@@ -215,7 +215,7 @@ function init(){
 }
 function resize(){if(!renderer)return;const w=wrap.clientWidth,h=wrap.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 function animate(){requestAnimationFrame(animate);renderer.render(scene,camera);}
-function updateLabels(){$("previewTitle").textContent=state.model;$("previewSubtitle").textContent=state.colorName+" · "+state.finish[0].toUpperCase()+state.finish.slice(1)+" finish";$("finishName").textContent=state.colorName;$("finishDot").style.background=state.color;}
+function updateLabels(){const cfg=models[state.model]||models["iPhone 17 Pro"];$("previewTitle").textContent=state.model;$("previewSubtitle").textContent=cfg.mm[0].toFixed(1)+" × "+cfg.mm[1].toFixed(1)+" × "+cfg.mm[2].toFixed(2)+" mm · "+state.colorName+" · "+state.finish[0].toUpperCase()+state.finish.slice(1);$("finishName").textContent=state.colorName;$("finishDot").style.background=state.color;}
 function applyColor(hex,name){state.color=hex;state.colorName=name||"Custom color";buildPhone();document.querySelectorAll(".swatch").forEach(b=>b.classList.toggle("active",b.dataset.color.toLowerCase()===hex.toLowerCase()));$("customColor").value=hex;updateLabels();}
 function snapshot(){return {...state,name:$("designName").value.trim()||"My dream iPhone"}}
 function showToast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),2200);}
