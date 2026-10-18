@@ -143,6 +143,9 @@
   function isVisibleInView(item) {
     // Older saved designs do not have a view property; infer their original component side.
     const side = item.view || (["body", "button"].includes(item.type) ? "both" : item.type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(item.type) ? "rear" : ["nc", "cpu", "gpu", "ram", "ssd"].includes(item.type) ? "inside" : "both");
+    // The exterior shell must not cover the chassis in the internal layout.
+    // The NC chassis is the base layer; internal parts render above it.
+    if (state.view === "inside" && ["body", "button"].includes(item.type)) return false;
     return side === "both" || side === state.view;
   }
   function selectItem(id) { state.selected = id; updateProperties(); }
