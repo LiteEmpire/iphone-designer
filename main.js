@@ -62,12 +62,29 @@
     let shape;
     if (item.type === "nc") {
       shape = el("g");
-      const frame = el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||22,fill:item.color,stroke:"#d8dee8","stroke-width":3,"fill-opacity":0.94});
-      shape.appendChild(frame);
-      // Stylized mounting points make the chassis read as a structural midframe.
-      [[item.x+15,item.y+15],[item.x+item.w-15,item.y+15],[item.x+15,item.y+item.h-15],[item.x+item.w-15,item.y+item.h-15]].forEach(([cx,cy])=>{
-        shape.appendChild(el("circle",{cx,cy,r:4,fill:"#343c4a",stroke:"#d8dee8","stroke-width":1.2}));
+      // Compound even-odd path: the interior subpaths are real transparent cutouts,
+      // not painted-on rectangles. Layout is a conceptual smartphone midframe.
+      const x=item.x, y=item.y, w=item.w, h=item.h;
+      const holes = [
+        // Rear camera cluster at the upper-left.
+        `M ${x+12} ${y+12} h 62 a 8 8 0 0 1 8 8 v 78 a 8 8 0 0 1 -8 8 h -62 a 8 8 0 0 1 -8 -8 v -78 a 8 8 0 0 1 8 -8 Z`,
+        // Main-board/chip area.
+        `M ${x+91} ${y+20} h 105 a 7 7 0 0 1 7 7 v 175 a 7 7 0 0 1 -7 7 h -105 a 7 7 0 0 1 -7 -7 v -175 a 7 7 0 0 1 7 -7 Z`,
+        // Battery cavity.
+        `M ${x+28} ${y+145} h 50 a 8 8 0 0 1 8 8 v 142 a 8 8 0 0 1 -8 8 h -50 a 8 8 0 0 1 -8 -8 v -142 a 8 8 0 0 1 8 -8 Z`,
+        // Lower daughterboard / loudspeaker well.
+        `M ${x+91} ${y+310} h 105 a 7 7 0 0 1 7 7 v 43 a 7 7 0 0 1 -7 7 h -105 a 7 7 0 0 1 -7 -7 v -43 a 7 7 0 0 1 7 -7 Z`,
+        // USB-C port opening and screw/mounting holes.
+        `M ${x+w/2-17} ${y+h-9} h 34 a 4 4 0 0 1 4 4 v 8 h -42 v -8 a 4 4 0 0 1 4 -4 Z`
+      ].join(" ");
+      const outer = `M ${x+22} ${y} H ${x+w-22} Q ${x+w} ${y} ${x+w} ${y+22} V ${y+h-22} Q ${x+w} ${y+h} ${x+w-22} ${y+h} H ${x+22} Q ${x} ${y+h} ${x} ${y+h-22} V ${y+22} Q ${x} ${y} ${x+22} ${y} Z`;
+      shape.appendChild(el("path", {d:outer+" "+holes,fill:item.color,stroke:"#d8dee8","stroke-width":3,"fill-rule":"evenodd","fill-opacity":0.96}));
+      // Reinforcing ribs and screw bosses around the component cavities.
+      [[x+10,y+105],[x+w-10,y+105],[x+10,y+285],[x+w-10,y+285],[x+18,y+h-25],[x+w-18,y+h-25]].forEach(([cx,cy])=>{
+        shape.appendChild(el("circle",{cx,cy,r:4,fill:"#4b5565",stroke:"#e2e8f0","stroke-width":1.3}));
       });
+      // Small rail details make the frame look machined rather than like a plain plate.
+      shape.appendChild(el("path",{d:`M ${x+83} ${y+22} v 100 M ${x+83} ${y+140} v 150 M ${x+87} ${y+312} v 42`,fill:"none",stroke:"#d8dee8","stroke-width":2,"stroke-linecap":"round"}));
     } else if (["cpu","gpu","ram","ssd"].includes(item.type)) {
       shape = el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||8,fill:item.color,stroke:"#ffffff99","stroke-width":1.5});
     } else if (item.type === "logo") {
