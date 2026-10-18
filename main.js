@@ -9,6 +9,10 @@
   const SITE_URL = "https://liteempire.github.io/iphone-designer/";
   const defaults = {
     body: { name: "Phone body", x: 115, y: 85, w: 190, h: 410, color: "#d9dde5", radius: 31, layer: 0 },
+    cpu: { name: "Nova CPU · N1", x: 145, y: 165, w: 118, h: 58, color: "#4b638c", radius: 8, layer: 8 },
+    gpu: { name: "Nova GPU · NG1", x: 145, y: 238, w: 118, h: 58, color: "#536b56", radius: 8, layer: 9 },
+    ram: { name: "Nova RAM · NR1", x: 145, y: 311, w: 118, h: 42, color: "#a77b48", radius: 7, layer: 10 },
+    ssd: { name: "Nova SSD · NS1", x: 145, y: 366, w: 118, h: 42, color: "#76619c", radius: 7, layer: 11 },
     screen: { name: "Display", x: 127, y: 98, w: 166, h: 384, color: "#252b38", radius: 25, layer: 1 },
     camera: { name: "Camera module", x: 132, y: 112, w: 76, h: 94, color: "#343a47", radius: 18, layer: 2 },
     lens: { name: "Camera lens", x: 145, y: 124, w: 25, h: 25, color: "#111827", radius: 13, layer: 3 },
@@ -25,7 +29,7 @@
   }
   function makeItem(type, overrides = {}) {
     const d = defaults[type] || defaults.detail;
-    const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : state.view;
+    const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : ["cpu", "gpu", "ram", "ssd"].includes(type) ? "inside" : state.view;
     const item = { id: state.nextId++, type, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h, color: d.color, radius: d.radius || 0, rotation: 0, layer: state.items.length, view: defaultView, ...overrides };
     if (type === "lens" && state.items.some(i => i.type === "lens")) {
       const count = state.items.filter(i => i.type === "lens").length;
@@ -40,6 +44,7 @@
       state.view = item.view;
       $("rearViewBtn").classList.toggle("active", state.view === "rear");
       $("frontViewBtn").classList.toggle("active", state.view === "front");
+      $("internalViewBtn").classList.toggle("active", state.view === "inside");
     }
     state.selected = item.id;
     render();
@@ -54,7 +59,9 @@
   function shapeFor(item) {
     const group = el("g", { "data-id": item.id, transform: `rotate(${item.rotation} ${item.x + item.w/2} ${item.y + item.h/2})`, cursor: "move" });
     let shape;
-    if (item.type === "logo") {
+    if (["cpu","gpu","ram","ssd"].includes(item.type)) {
+      shape = el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||8,fill:item.color,stroke:"#ffffff99","stroke-width":1.5});
+    } else if (item.type === "logo") {
       shape = el("text", { x: item.x + item.w/2, y: item.y + item.h*.72, "text-anchor":"middle", "font-family":"Space Grotesk, sans-serif", "font-size":Math.max(12,item.w*.65), "font-weight":"700", fill:item.color });
       shape.textContent = "N";
     } else if (item.type === "lens") {
@@ -75,6 +82,11 @@
       }
     }
     group.appendChild(shape);
+    if (["cpu","gpu","ram","ssd"].includes(item.type)) {
+      const code = ({cpu:"N1",gpu:"NG1",ram:"NR1",ssd:"NS1"})[item.type];
+      const chipText = el("text",{x:item.x+item.w/2,y:item.y+item.h*.43,"text-anchor":"middle","font-family":"Space Grotesk, sans-serif","font-size":Math.max(10,Math.min(16,item.w*.12)),"font-weight":"700",fill:"#ffffff"}); chipText.textContent=code; group.appendChild(chipText);
+      const label = el("text",{x:item.x+item.w/2,y:item.y+item.h*.72,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":Math.max(7,Math.min(10,item.w*.075)),"font-weight":"600",fill:"#ffffffdd"}); label.textContent=({cpu:"CPU",gpu:"GPU",ram:"RAM",ssd:"SSD"})[item.type]; group.appendChild(label);
+    }
     if (item.type === "body") {
       group.appendChild(el("rect",{x:item.x+item.w*.42,y:item.y+item.h-13,width:item.w*.16,height:3,rx:2,fill:"#737d8d","fill-opacity":.55}));
     }
@@ -98,11 +110,13 @@
     });
     updateProperties();
     $("selectionLabel").textContent = selectedItem() ? selectedItem().name + " selected" : "No component selected";
-    $("canvasTitle").textContent = "Horizon · " + (state.view === "rear" ? "Rear design" : "Front design");
+    $("canvasTitle").textContent = "Horizon · " + (state.view === "rear" ? "Rear design" : state.view === "front" ? "Front design" : "Internal layout");
+    $("dropHint").classList.toggle("hidden", state.items.some(i => isVisibleInView(i)));
+    $("componentCount").textContent = state.items.length;
   }
   function isVisibleInView(item) {
     // Older saved designs do not have a view property; infer their original component side.
-    const side = item.view || (["body", "button"].includes(item.type) ? "both" : item.type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(item.type) ? "rear" : "both");
+    const side = item.view || (["body", "button"].includes(item.type) ? "both" : item.type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(item.type) ? "rear" : ["cpu", "gpu", "ram", "ssd"].includes(item.type) ? "inside" : "both");
     return side === "both" || side === state.view;
   }
   function selectItem(id) { state.selected = id; updateProperties(); }
@@ -110,8 +124,9 @@
     const item = selectedItem();
     $("emptyProperties").hidden = !!item;
     $("propertyControls").hidden = !item;
-    if (!item) { $("selectionLabel").textContent = "No component selected"; return; }
+    if (!item) { $("selectionLabel").textContent = "No component selected"; $("propertyTarget").textContent = "None"; return; }
     $("selectionLabel").textContent = item.name + " selected";
+    $("propertyTarget").textContent = item.name;
     $("componentName").value = item.name;
     $("componentColor").value = validHex(item.color) ? item.color : "#d9dde5";
     $("hexColor").value = item.color.toUpperCase();
@@ -176,7 +191,7 @@
   function loadDesign(data) {
     state.items = (data.items || []).map(i=>({...i}));
     state.nextId = Math.max(0,...state.items.map(i=>i.id))+1; state.view=data.view||"rear"; state.selected=null;
-    $("rearViewBtn").classList.toggle("active",state.view==="rear"); $("frontViewBtn").classList.toggle("active",state.view==="front"); render();
+    $("rearViewBtn").classList.toggle("active",state.view==="rear"); $("frontViewBtn").classList.toggle("active",state.view==="front"); $("internalViewBtn").classList.toggle("active",state.view==="inside"); render();
   }
   async function loadSaved() {
     if (state.user) {
@@ -224,18 +239,26 @@
     // Make the second lens sit beside the first and use a simple, balanced camera layout.
     const lenses=state.items.filter(i=>i.type==="lens"); if(lenses[1]) {lenses[1].x=174;lenses[1].y=124;}
     state.items.forEach((item,index)=>item.layer=index);
-    state.view="rear";state.selected=null;$("rearViewBtn").classList.add("active");$("frontViewBtn").classList.remove("active");$("canvasGrid").classList.remove("hidden");state.grid=true;$("gridBtn").classList.add("active");render();
+    state.view="rear";state.selected=null;$("rearViewBtn").classList.add("active");$("frontViewBtn").classList.remove("active");$("internalViewBtn").classList.remove("active");$("canvasGrid").classList.remove("hidden");state.grid=true;$("gridBtn").classList.add("active");render();
   }
   function switchView(view) {
-    if (view !== "rear" && view !== "front") return;
+    if (view !== "rear" && view !== "front" && view !== "inside") return;
     state.view = view;
     state.selected = null;
     $("rearViewBtn").classList.toggle("active", view === "rear");
     $("frontViewBtn").classList.toggle("active", view === "front");
+    $("internalViewBtn").classList.toggle("active", view === "inside");
     render();
   }
   $("mobileNudge").addEventListener("click",ev=>{const btn=ev.target.closest("[data-nudge]");if(!btn)return;const item=selectedItem();if(!item){toast("Select a component first");return;}const step=4;const direction=btn.dataset.nudge;if(direction==="up")item.y=Math.max(0,item.y-step);if(direction==="down")item.y=Math.min(620-item.h,item.y+step);if(direction==="left")item.x=Math.max(0,item.x-step);if(direction==="right")item.x=Math.min(420-item.w,item.x+step);render();});
-  $("componentList").addEventListener("click",ev=>{const btn=ev.target.closest("[data-add]");if(btn)addItem(btn.dataset.add);});
+  document.querySelectorAll("#componentList [data-add], #internalComponentList [data-add]").forEach(btn=>{
+    btn.addEventListener("click",()=>addItem(btn.dataset.add));
+    btn.addEventListener("dragstart",ev=>{ev.dataTransfer.setData("text/plain",btn.dataset.add);ev.dataTransfer.effectAllowed="copy";});
+  });
+  const canvasArea=$("canvasArea");
+  canvasArea.addEventListener("dragover",ev=>{ev.preventDefault();canvasArea.classList.add("drag-over");if(ev.dataTransfer)ev.dataTransfer.dropEffect="copy";});
+  canvasArea.addEventListener("dragleave",ev=>{if(!canvasArea.contains(ev.relatedTarget))canvasArea.classList.remove("drag-over");});
+  canvasArea.addEventListener("drop",ev=>{ev.preventDefault();canvasArea.classList.remove("drag-over");const type=ev.dataTransfer.getData("text/plain");if(!defaults[type])return;const item=makeItem(type);const point=canvasPoint({clientX:ev.clientX,clientY:ev.clientY});item.x=Math.max(0,Math.min(420-item.w,point.x-item.w/2));item.y=Math.max(0,Math.min(620-item.h,point.y-item.h/2));state.items.push(item);state.selected=item.id;if(item.view!=="both"&&item.view!==state.view)switchView(item.view);else render();toast(item.name+" added to frame");});
   $("componentName").addEventListener("input",ev=>{const i=selectedItem();if(i){i.name=ev.target.value||"Component";$("selectionLabel").textContent=i.name+" selected";}});
   $("componentColor").addEventListener("input",ev=>setColor(ev.target.value));
   $("hexColor").addEventListener("change",ev=>{let v=ev.target.value.trim();if(!v.startsWith("#"))v="#"+v;if(validHex(v))setColor(v);else updateProperties();});
@@ -251,6 +274,7 @@
   $("sendBackBtn").addEventListener("click",()=>reorder(state.selected,"back"));
   $("rearViewBtn").addEventListener("click",()=>switchView("rear"));
   $("frontViewBtn").addEventListener("click",()=>switchView("front"));
+  $("internalViewBtn").addEventListener("click",()=>switchView("inside"));
   $("gridBtn").addEventListener("click",()=>{state.grid=!state.grid;$("canvasGrid").classList.toggle("hidden",!state.grid);$("gridBtn").classList.toggle("active",state.grid);$("gridBtn").setAttribute("aria-pressed",String(state.grid));});
   $("saveBtn").addEventListener("click",saveDesign);
   async function updateAccountUI() {
