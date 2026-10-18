@@ -2,3 +2,44 @@
 
 /* Touch-friendly arrow controls for mobile component placement */
 .mobile-nudge{display:none}.nudge-pad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,40px);gap:5px;justify-content:center}.nudge-pad button{border:1px solid #dfe4ee;background:#fff;border-radius:11px;color:#355fe8;font-size:23px;font-weight:600;box-shadow:0 2px 5px #2025320a;touch-action:manipulation}.nudge-pad button:active{background:#eef2ff;transform:scale(.96)}.nudge-pad button[data-nudge="up"]{grid-column:2;grid-row:1}.nudge-pad button[data-nudge="left"]{grid-column:1;grid-row:2}.nudge-pad button[data-nudge="down"]{grid-column:2;grid-row:2}.nudge-pad button[data-nudge="right"]{grid-column:3;grid-row:2}.nudge-caption,.nudge-hint{display:block;text-align:center;font-size:10px;color:#858b98}.nudge-caption{font-weight:700;letter-spacing:1px;color:#525b6d;margin-bottom:9px}.nudge-hint{margin-top:8px}@media(max-width:760px){.mobile-nudge{display:block;border-top:1px solid var(--line);margin-top:14px;padding-top:13px}.nudge-pad button{min-width:44px;min-height:40px}}
+
+/* PhET-inspired component explorer + unified properties workspace */
+.workspace{grid-template-columns:minmax(270px,330px) minmax(420px,1fr);align-items:start;gap:16px}
+.explorer-panel{padding:17px;min-width:0;max-height:calc(100vh - 92px);overflow:auto;position:sticky;top:84px;scrollbar-width:thin}
+.explorer-header{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.explorer-header h2{font:600 19px "Space Grotesk",sans-serif;letter-spacing:-.5px;margin:7px 0 0}
+.explorer-count{display:grid;place-items:center;min-width:28px;height:28px;padding:0 7px;border-radius:9px;background:#eef2ff;color:#355fe8;font-size:11px;font-weight:700}
+.explorer-group{margin-top:18px}
+.explorer-group-title{display:flex;align-items:center;gap:7px;font-size:9px;letter-spacing:1.3px;font-weight:700;color:#858d9c;margin-bottom:9px}
+.explorer-group-title>span{display:grid;place-items:center;width:20px;height:20px;border-radius:6px;background:#edf1f7;color:#4d5b75;font-size:9px}
+.explorer-group-title small{margin-left:auto;color:#355fe8;letter-spacing:.7px;font-size:8px}
+.component-list{display:flex;flex-direction:column;gap:6px}
+.component-choice{cursor:grab;user-select:none}
+.component-choice:active{cursor:grabbing}
+.component-choice[draggable=true]:hover{transform:translateX(2px)}
+.inner-group{padding-top:14px;border-top:1px solid #e9ecf2}
+.inner-choice{background:#f6f7ff;border-color:#e9ecff}
+.chip-icon{width:42px;min-width:42px;height:32px;display:grid;place-items:center;border-radius:7px;background:#252c3a;color:#dce5ff;font:700 10px "Space Grotesk",sans-serif;letter-spacing:-.4px}
+.explorer-note{display:flex;flex-direction:column;gap:4px;padding:12px;background:#f2f5fc;border-radius:10px;margin-top:15px;font-size:10px;line-height:1.5;color:#727b8c}
+.explorer-note b{color:#343b4b;font-size:11px}
+.properties-inline{border-top:1px solid var(--line);margin-top:18px;padding-top:17px}
+.properties-heading{margin-bottom:12px}
+.property-target{max-width:105px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:6px 8px;border-radius:7px;background:#f1f4f9;color:#6b7485;font-size:9px}
+.property-controls{margin-top:14px}
+.empty-properties{padding:20px 8px 18px}
+.empty-properties p{max-width:230px}
+.save-box{margin-top:17px}
+.canvas-panel{min-height:720px}
+.canvas-area{height:min(72vh,720px);min-height:520px;background:#fbfcfe}
+.canvas-area.drag-over{outline:3px solid #9db2ff;outline-offset:-4px;background:#f4f7ff}
+.drop-hint{position:absolute;inset:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:2px dashed #dce3f0;border-radius:12px;color:#8c95a5;pointer-events:none;transition:opacity .15s}
+.drop-hint span{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:#eef2ff;color:#355fe8;font-size:24px}
+.drop-hint b{font-size:12px;color:#6b7485}
+.drop-hint small{font-size:10px}
+.drop-hint.hidden{opacity:0}
+.frame-subtitle{margin:5px 0 0;color:#8b92a0;font-size:10px}
+#designCanvas{z-index:1}
+.canvas-instructions{z-index:2}
+@media(max-width:1050px){.workspace{grid-template-columns:280px minmax(0,1fr)}.explorer-panel{position:relative;top:auto;max-height:none}.canvas-panel{min-height:0}.canvas-area{height:600px}}
+@media(max-width:760px){.workspace{display:flex;flex-direction:column}.explorer-panel{order:2;width:100%;position:relative;top:auto;max-height:none;overflow:visible}.canvas-panel{order:1;width:100%;padding:12px}.canvas-area{height:560px;min-height:460px}.explorer-panel .component-list{display:grid;grid-template-columns:1fr 1fr}.component-choice{padding:8px;gap:7px}.chip-icon{width:38px;min-width:38px}.properties-inline{margin-top:16px}.canvas-toolbar{align-items:flex-start;flex-direction:column}.toolbar-actions{align-self:flex-start;flex-wrap:wrap}.explorer-header h2{font-size:18px}}
+@media(max-width:390px){.explorer-panel .component-list{grid-template-columns:1fr}.canvas-area{height:500px;min-height:440px}}
