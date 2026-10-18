@@ -13,7 +13,7 @@
     button: { name: "Side button", x: 302, y: 205, w: 8, h: 58, color: "#9da5b2", radius: 4, layer: 6 },
     detail: { name: "Custom detail", x: 220, y: 350, w: 40, h: 24, color: "#91a8c7", radius: 8, layer: 7 }
   };
-  const initial = ["body", "camera", "lens", "lens", "flash", "logo", "button"];
+  const initial = ["body", "screen", "camera", "lens", "lens", "flash", "logo", "button"];
   let toastTimer;
   function toast(message) {
     const el = $("toast"); el.textContent = message; el.classList.add("show");
@@ -21,7 +21,7 @@
   }
   function makeItem(type, overrides = {}) {
     const d = defaults[type] || defaults.detail;
-    const item = { id: state.nextId++, type, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h, color: d.color, radius: d.radius || 0, rotation: 0, layer: state.items.length, ...overrides };
+    const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : state.view;\n    const item = { id: state.nextId++, type, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h, color: d.color, radius: d.radius || 0, rotation: 0, layer: state.items.length, view: defaultView, ...overrides };
     if (type === "lens" && state.items.some(i => i.type === "lens")) {
       const count = state.items.filter(i => i.type === "lens").length;
       item.x = d.x + (count % 2) * 31; item.y = d.y + Math.floor(count / 2) * 31;
@@ -81,7 +81,7 @@
     $("selectionLabel").textContent = selectedItem() ? selectedItem().name + " selected" : "No component selected";
     $("canvasTitle").textContent = "Horizon · " + (state.view === "rear" ? "Rear design" : "Front design");
   }
-  function selectItem(id) { state.selected = id; updateProperties(); }
+  function isVisibleInView(item) {\n    // Older saved designs do not have a view property; infer their original component side.\n    const side = item.view || (["body", "button"].includes(item.type) ? "both" : item.type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(item.type) ? "rear" : "both");\n    return side === "both" || side === state.view;\n  }\n  function selectItem(id) { state.selected = id; updateProperties(); }
   function updateProperties() {
     const item = selectedItem();
     $("emptyProperties").hidden = !!item;
