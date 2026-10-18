@@ -2,7 +2,11 @@
   const $ = (id) => document.getElementById(id);
   const svgNS = "http://www.w3.org/2000/svg";
   const canvas = $("designCanvas");
-  const state = { view: "rear", grid: true, selected: null, nextId: 1, items: [], saved: [] };
+  const state = { view: "rear", grid: true, selected: null, nextId: 1, items: [], saved: [], user: null };
+  const SUPABASE_URL = "https://zvcycttznebsfdzerijj.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_n_ojTLFmbI41ZMJOujRArg_Gg1E2tNP";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const SITE_URL = "https://liteempire.github.io/iphone-designer/";
   const defaults = {
     body: { name: "Phone body", x: 115, y: 85, w: 190, h: 410, color: "#d9dde5", radius: 31, layer: 0 },
     screen: { name: "Display", x: 127, y: 98, w: 166, h: 384, color: "#252b38", radius: 25, layer: 1 },
@@ -174,8 +178,14 @@
     state.nextId = Math.max(0,...state.items.map(i=>i.id))+1; state.view=data.view||"rear"; state.selected=null;
     $("rearViewBtn").classList.toggle("active",state.view==="rear"); $("frontViewBtn").classList.toggle("active",state.view==="front"); render();
   }
-  function loadSaved() {
-    try { state.saved = JSON.parse(localStorage.getItem("nova-horizon-designs") || "[]"); } catch { state.saved=[]; }
+  async function loadSaved() {
+    if (state.user) {
+      const { data, error } = await supabase.from("designs").select("id,name,design,created_at").order("updated_at", { ascending: false });
+      if (error) { toast("Could not load your cloud designs"); console.error(error); return; }
+      state.saved = (data || []).map(row => ({ ...row.design, cloudId: row.id, title: row.name }));
+    } else {
+      try { state.saved = JSON.parse(localStorage.getItem("nova-horizon-designs") || "[]"); } catch { state.saved=[]; }
+    }
     renderSaved();
   }
   function renderSaved() {
@@ -191,16 +201,23 @@
       const sub=document.createElement("small"); sub.textContent=d.items.length+" components";
       info.append(name,sub);
       const load=document.createElement("button"); load.textContent="Open"; load.addEventListener("click",()=>{loadDesign(d);toast("Design opened");window.scrollTo({top:0,behavior:"smooth"});});
-      const remove=document.createElement("button"); remove.textContent="×"; remove.setAttribute("aria-label","Delete saved design"); remove.addEventListener("click",()=>{state.saved.splice(index,1);persistSaved();renderSaved();});
+      const remove=document.createElement("button"); remove.textContent="×"; remove.setAttribute("aria-label","Delete saved design"); remove.addEventListener("click",async()=>{const target=state.saved[index];if(state.user && target.cloudId){const {error}=await supabase.from("designs").delete().eq("id",target.cloudId);if(error){toast("Could not delete design");return;}}state.saved.splice(index,1);persistSaved();renderSaved();});
       card.append(thumb,info,load,remove); root.appendChild(card);
     });
   }
-  function persistSaved() { localStorage.setItem("nova-horizon-designs",JSON.stringify(state.saved)); renderSaved(); }
-  function saveDesign() {
+  async function persistSaved() {
+    if (!state.user) { localStorage.setItem("nova-horizon-designs",JSON.stringify(state.saved)); renderSaved(); return; }
+    // Cloud saves are written individually by save/delete actions, never shared across users.
+    renderSaved();
+  }
+  async function saveDesign() {
+    if (!state.user) { toast("Sign in with Google to save privately"); return; }
     const data=serialize(); data.title=prompt("Name this Horizon concept:", "Horizon concept "+(state.saved.length+1));
     if (data.title === null) return;
     data.title=data.title.trim() || "Horizon concept";
-    state.saved.unshift(data); state.saved=state.saved.slice(0,30); persistSaved(); toast("Horizon concept saved on this device");
+    const { data: row, error } = await supabase.from("designs").insert({ user_id: state.user.id, name: data.title, design: data }).select("id,name,design,created_at").single();
+    if (error) { console.error(error); toast("Could not save design. Please try again."); return; }
+    state.saved.unshift({ ...row.design, cloudId: row.id, title: row.name }); state.saved=state.saved.slice(0,30); renderSaved(); toast("Design saved privately to your account");
   }
   function reset() {
     state.items=[]; state.nextId=1; initial.forEach(type=>state.items.push(makeItem(type)));
@@ -236,6 +253,27 @@
   $("frontViewBtn").addEventListener("click",()=>switchView("front"));
   $("gridBtn").addEventListener("click",()=>{state.grid=!state.grid;$("canvasGrid").classList.toggle("hidden",!state.grid);$("gridBtn").classList.toggle("active",state.grid);$("gridBtn").setAttribute("aria-pressed",String(state.grid));});
   $("saveBtn").addEventListener("click",saveDesign);
+  async function updateAccountUI() {
+    $("signInBtn").hidden = !!state.user;
+    $("signOutBtn").hidden = !state.user;
+    $("accountStatus").textContent = state.user ? (state.user.email || "Signed in") : "";
+    $("saveDescription").textContent = state.user ? "Saved privately to your Google account." : "Sign in with Google to save designs privately to your account.";
+    $("saveBtn").textContent = state.user ? "Save to my account ↗" : "Sign in to save ↗";
+  }
+  $("signInBtn").addEventListener("click", async () => {
+    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: SITE_URL } });
+    if (error) { console.error(error); toast("Google sign-in is not configured yet"); }
+  });
+  $("signOutBtn").addEventListener("click", async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) { toast("Could not sign out"); return; }
+    state.user = null; state.saved = []; await loadSaved(); await updateAccountUI(); toast("Signed out");
+  });
+  supabase.auth.onAuthStateChange(async (_event, session) => {
+    state.user = session?.user || null;
+    await updateAccountUI();
+    await loadSaved();
+  });
   $("resetBtn").addEventListener("click",()=>{if(confirm("Reset the current Horizon design?")){reset();toast("Canvas reset");}});
   $("clearSavedBtn").addEventListener("click",()=>{if(!state.saved.length)return;if(confirm("Delete all saved concepts from this browser?")){state.saved=[];persistSaved();toast("Saved concepts cleared");}});
   $("exportBtn").addEventListener("click",()=>{
@@ -243,5 +281,5 @@
     const xml=new XMLSerializer().serializeToString(clone); const blob=new Blob([xml],{type:"image/svg+xml;charset=utf-8"}); const url=URL.createObjectURL(blob);
     const a=document.createElement("a");a.href=url;a.download="nova-horizon-design.svg";a.click();URL.revokeObjectURL(url);toast("SVG design exported");
   });
-  reset(); loadSaved();
+  reset(); updateAccountUI(); loadSaved();
 })();
