@@ -216,8 +216,26 @@
       const sub=document.createElement("small"); sub.textContent=d.items.length+" components";
       info.append(name,sub);
       const load=document.createElement("button"); load.textContent="Open"; load.addEventListener("click",()=>{loadDesign(d);toast("Design opened");window.scrollTo({top:0,behavior:"smooth"});});
+      const update=document.createElement("button"); update.textContent="Update with current design"; update.className="text-button"; update.setAttribute("aria-label","Replace "+(d.title || "saved design")+" with the current canvas design"); update.addEventListener("click",async()=>{
+        const target=state.saved[index];
+        if(!target)return;
+        const targetName=target.title || "Horizon concept";
+        if(!confirm("Replace “"+targetName+"” with the design currently on your canvas? This cannot be undone."))return;
+        const current=serialize();
+        current.title=targetName;
+        if(state.user){
+          if(!target.cloudId){toast("This saved design is local-only. Sign in to update cloud projects.");return;}
+          const {error}=await supabase.from("designs").update({name:targetName,design:current,updated_at:new Date().toISOString()}).eq("id",target.cloudId).eq("user_id",state.user.id);
+          if(error){console.error(error);toast("Could not update project. Please try again.");return;}
+          state.saved[index]={...current,cloudId:target.cloudId,title:targetName};
+        }else{
+          state.saved[index]={...current,title:targetName};
+          try{localStorage.setItem("nova-horizon-designs",JSON.stringify(state.saved));}catch(error){console.error(error);toast("Could not update this browser's saved project");return;}
+        }
+        renderSaved();toast("Project updated: "+targetName);
+      });
       const remove=document.createElement("button"); remove.textContent="×"; remove.setAttribute("aria-label","Delete saved design"); remove.addEventListener("click",async()=>{const target=state.saved[index];if(state.user && target.cloudId){const {error}=await supabase.from("designs").delete().eq("id",target.cloudId);if(error){toast("Could not delete design");return;}}state.saved.splice(index,1);persistSaved();renderSaved();});
-      card.append(thumb,info,load,remove); root.appendChild(card);
+      card.append(thumb,info,load,update,remove); root.appendChild(card);
     });
   }
   async function persistSaved() {
