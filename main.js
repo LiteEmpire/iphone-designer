@@ -85,7 +85,7 @@
   function render() {
     canvas.querySelectorAll("[data-id]").forEach(n => n.remove());
     const sorted = [...state.items].sort((a,b) => a.layer-b.layer);
-    sorted.filter(item => isVisibleInView(item)).forEach(item => canvas.appendChild(shapeFor(item)));
+    sorted.filter(item => isVisibleInView(item)).forEach(item => {\n      // A phone viewed from the front shows its side button on the opposite edge.\n      const visualItem = item.type === "button" && state.view === "front"\n        ? { ...item, x: 420 - item.x - item.w }\n        : item;\n      canvas.appendChild(shapeFor(visualItem));\n    });
     updateProperties();
     $("selectionLabel").textContent = selectedItem() ? selectedItem().name + " selected" : "No component selected";
     $("canvasTitle").textContent = "Horizon · " + (state.view === "rear" ? "Rear design" : "Front design");
@@ -137,12 +137,12 @@
     if (!pointer) return;
     const item = state.items.find(i => i.id === pointer.id); if (!item) return;
     const point = canvasPoint(ev);
-    const dx = point.x-pointer.startX, dy = point.y-pointer.startY;
+    const realItem = state.items.find(i => i.id === pointer.id);\n    const dx = point.x-pointer.startX, dy = point.y-pointer.startY;\n    // In the front view, horizontal dragging of the mirrored side button is reversed.\n    const moveX = realItem && realItem.type === "button" && state.view === "front" ? -dx : dx;
     if (pointer.resizing) {
       item.w = Math.max(8,Math.min(420-item.x,pointer.w+dx));
       item.h = Math.max(8,Math.min(620-item.y,pointer.h+dy));
     } else {
-      item.x = Math.max(0,Math.min(420-item.w,pointer.x+dx));
+      item.x = Math.max(0,Math.min(420-item.w,pointer.x+moveX));
       item.y = Math.max(0,Math.min(620-item.h,pointer.y+dy));
     }
     render();
