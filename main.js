@@ -61,12 +61,12 @@
     const group = el("g", { "data-id": item.id, transform: `rotate(${item.rotation} ${item.x + item.w/2} ${item.y + item.h/2})`, cursor: "move" });
     let shape;
     if (item.type === "nc") {
-      shape = el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||22,fill:item.color,stroke:"#d8dee8","stroke-width":3});
-      shape.setAttribute("fill-opacity","0.94");
+      shape = el("g");
+      const frame = el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||22,fill:item.color,stroke:"#d8dee8","stroke-width":3,"fill-opacity":0.94});
+      shape.appendChild(frame);
       // Stylized mounting points make the chassis read as a structural midframe.
       [[item.x+15,item.y+15],[item.x+item.w-15,item.y+15],[item.x+15,item.y+item.h-15],[item.x+item.w-15,item.y+item.h-15]].forEach(([cx,cy])=>{
-        shape.parentNode;
-        group.appendChild(el("circle",{cx,cy,r:4,fill:"#343c4a",stroke:"#d8dee8","stroke-width":1.2}));
+        shape.appendChild(el("circle",{cx,cy,r:4,fill:"#343c4a",stroke:"#d8dee8","stroke-width":1.2}));
       });
     } else if (["cpu","gpu","ram","ssd"].includes(item.type)) {
       shape = el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||8,fill:item.color,stroke:"#ffffff99","stroke-width":1.5});
