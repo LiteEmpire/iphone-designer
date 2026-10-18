@@ -9,6 +9,7 @@
   const SITE_URL = "https://liteempire.github.io/iphone-designer/";
   const defaults = {
     body: { name: "Phone body", x: 115, y: 85, w: 190, h: 410, color: "#d9dde5", radius: 31, layer: 0 },
+    nc: { name: "Nova Chassis · NC", x: 95, y: 115, w: 230, h: 390, color: "#8b96a8", radius: 22, layer: 0 },
     cpu: { name: "Nova CPU · N1", x: 145, y: 165, w: 118, h: 58, color: "#4b638c", radius: 8, layer: 8 },
     gpu: { name: "Nova GPU · NG1", x: 145, y: 238, w: 118, h: 58, color: "#536b56", radius: 8, layer: 9 },
     ram: { name: "Nova RAM · NR1", x: 145, y: 311, w: 118, h: 42, color: "#a77b48", radius: 7, layer: 10 },
@@ -29,8 +30,8 @@
   }
   function makeItem(type, overrides = {}) {
     const d = defaults[type] || defaults.detail;
-    const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : ["cpu", "gpu", "ram", "ssd"].includes(type) ? "inside" : state.view;
-    const item = { id: state.nextId++, type, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h, color: d.color, radius: d.radius || 0, rotation: 0, layer: state.items.length, view: defaultView, ...overrides };
+    const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : ["nc", "cpu", "gpu", "ram", "ssd"].includes(type) ? "inside" : state.view;
+    const item = { id: state.nextId++, type, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h, color: d.color, radius: d.radius || 0, rotation: 0, layer: type === "nc" ? -1 : state.items.length, view: defaultView, ...overrides };
     if (type === "lens" && state.items.some(i => i.type === "lens")) {
       const count = state.items.filter(i => i.type === "lens").length;
       item.x = d.x + (count % 2) * 31; item.y = d.y + Math.floor(count / 2) * 31;
@@ -59,7 +60,15 @@
   function shapeFor(item) {
     const group = el("g", { "data-id": item.id, transform: `rotate(${item.rotation} ${item.x + item.w/2} ${item.y + item.h/2})`, cursor: "move" });
     let shape;
-    if (["cpu","gpu","ram","ssd"].includes(item.type)) {
+    if (item.type === "nc") {
+      shape = el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||22,fill:item.color,stroke:"#d8dee8","stroke-width":3});
+      shape.setAttribute("fill-opacity","0.94");
+      // Stylized mounting points make the chassis read as a structural midframe.
+      [[item.x+15,item.y+15],[item.x+item.w-15,item.y+15],[item.x+15,item.y+item.h-15],[item.x+item.w-15,item.y+item.h-15]].forEach(([cx,cy])=>{
+        shape.parentNode;
+        group.appendChild(el("circle",{cx,cy,r:4,fill:"#343c4a",stroke:"#d8dee8","stroke-width":1.2}));
+      });
+    } else if (["cpu","gpu","ram","ssd"].includes(item.type)) {
       shape = el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||8,fill:item.color,stroke:"#ffffff99","stroke-width":1.5});
     } else if (item.type === "logo") {
       shape = el("text", { x: item.x + item.w/2, y: item.y + item.h*.72, "text-anchor":"middle", "font-family":"Space Grotesk, sans-serif", "font-size":Math.max(12,item.w*.65), "font-weight":"700", fill:item.color });
@@ -116,7 +125,7 @@
   }
   function isVisibleInView(item) {
     // Older saved designs do not have a view property; infer their original component side.
-    const side = item.view || (["body", "button"].includes(item.type) ? "both" : item.type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(item.type) ? "rear" : ["cpu", "gpu", "ram", "ssd"].includes(item.type) ? "inside" : "both");
+    const side = item.view || (["body", "button"].includes(item.type) ? "both" : item.type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(item.type) ? "rear" : ["nc", "cpu", "gpu", "ram", "ssd"].includes(item.type) ? "inside" : "both");
     return side === "both" || side === state.view;
   }
   function selectItem(id) { state.selected = id; updateProperties(); }
