@@ -21,7 +21,8 @@
   }
   function makeItem(type, overrides = {}) {
     const d = defaults[type] || defaults.detail;
-    const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : state.view;\n    const item = { id: state.nextId++, type, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h, color: d.color, radius: d.radius || 0, rotation: 0, layer: state.items.length, view: defaultView, ...overrides };
+    const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : state.view;
+    const item = { id: state.nextId++, type, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h, color: d.color, radius: d.radius || 0, rotation: 0, layer: state.items.length, view: defaultView, ...overrides };
     if (type === "lens" && state.items.some(i => i.type === "lens")) {
       const count = state.items.filter(i => i.type === "lens").length;
       item.x = d.x + (count % 2) * 31; item.y = d.y + Math.floor(count / 2) * 31;
@@ -76,12 +77,17 @@
   function render() {
     canvas.querySelectorAll("[data-id]").forEach(n => n.remove());
     const sorted = [...state.items].sort((a,b) => a.layer-b.layer);
-    sorted.forEach(item => canvas.appendChild(shapeFor(item)));
+    sorted.filter(item => isVisibleInView(item)).forEach(item => canvas.appendChild(shapeFor(item)));
     updateProperties();
     $("selectionLabel").textContent = selectedItem() ? selectedItem().name + " selected" : "No component selected";
     $("canvasTitle").textContent = "Horizon · " + (state.view === "rear" ? "Rear design" : "Front design");
   }
-  function isVisibleInView(item) {\n    // Older saved designs do not have a view property; infer their original component side.\n    const side = item.view || (["body", "button"].includes(item.type) ? "both" : item.type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(item.type) ? "rear" : "both");\n    return side === "both" || side === state.view;\n  }\n  function selectItem(id) { state.selected = id; updateProperties(); }
+  function isVisibleInView(item) {
+    // Older saved designs do not have a view property; infer their original component side.
+    const side = item.view || (["body", "button"].includes(item.type) ? "both" : item.type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(item.type) ? "rear" : "both");
+    return side === "both" || side === state.view;
+  }
+  function selectItem(id) { state.selected = id; updateProperties(); }
   function updateProperties() {
     const item = selectedItem();
     $("emptyProperties").hidden = !!item;
@@ -166,15 +172,12 @@
     state.view="rear";state.selected=null;$("rearViewBtn").classList.add("active");$("frontViewBtn").classList.remove("active");$("canvasGrid").classList.remove("hidden");state.grid=true;$("gridBtn").classList.add("active");render();
   }
   function switchView(view) {
-    state.view=view;
-    if(view==="front") {
-      const body=state.items.find(i=>i.type==="body");
-      if(body) { body.color="#cbd2dd"; }
-      let screen=state.items.find(i=>i.type==="screen");
-      if(!screen) { screen=makeItem("screen",{x:127,y:98,w:166,h:384,color:"#202633",layer:state.items.length});state.items.push(screen); }
-      state.items.filter(i=>["camera","lens","flash","logo"].includes(i.type)).forEach(i=>i.color=i.type==="logo"?"#5b6473":"#202633");
-    }
-    $("rearViewBtn").classList.toggle("active",view==="rear"); $("frontViewBtn").classList.toggle("active",view==="front"); render();
+    if (view !== "rear" && view !== "front") return;
+    state.view = view;
+    state.selected = null;
+    $("rearViewBtn").classList.toggle("active", view === "rear");
+    $("frontViewBtn").classList.toggle("active", view === "front");
+    render();
   }
   $("componentList").addEventListener("click",ev=>{const btn=ev.target.closest("[data-add]");if(btn)addItem(btn.dataset.add);});
   $("componentName").addEventListener("input",ev=>{const i=selectedItem();if(i){i.name=ev.target.value||"Component";$("selectionLabel").textContent=i.name+" selected";}});
