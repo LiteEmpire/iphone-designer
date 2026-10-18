@@ -31,7 +31,15 @@
   }
   function addItem(type) {
     const item = makeItem(type);
-    state.items.push(item); selectItem(item.id); render(); toast(item.name + " added");
+    state.items.push(item);
+    if (item.view !== "both" && item.view !== state.view) {
+      state.view = item.view;
+      $("rearViewBtn").classList.toggle("active", state.view === "rear");
+      $("frontViewBtn").classList.toggle("active", state.view === "front");
+    }
+    state.selected = item.id;
+    render();
+    toast(item.name + " added");
   }
   function selectedItem() { return state.items.find(i => i.id === state.selected); }
   function el(tag, attrs = {}) {
@@ -107,23 +115,44 @@
     item.color = value; $("componentColor").value = value; $("hexColor").value = value.toUpperCase(); render();
   }
   let pointer = null;
+  function canvasPoint(ev) {
+    const point = canvas.createSVGPoint();
+    point.x = ev.clientX;
+    point.y = ev.clientY;
+    const matrix = canvas.getScreenCTM();
+    return matrix ? point.matrixTransform(matrix.inverse()) : { x: ev.clientX, y: ev.clientY };
+  }
   function startPointer(ev, id, resizing) {
     ev.preventDefault(); ev.stopPropagation();
     const item = state.items.find(i => i.id === id); if (!item) return;
-    state.selected = id; updateProperties(); render();
-    pointer = { id, startX: ev.clientX, startY: ev.clientY, x:item.x, y:item.y, w:item.w, h:item.h, resizing, scaleX:420/canvas.getBoundingClientRect().width, scaleY:620/canvas.getBoundingClientRect().height };
+    state.selected = id;
+    render();
+    const point = canvasPoint(ev);
+    pointer = { id, startX: point.x, startY: point.y, x:item.x, y:item.y, w:item.w, h:item.h, resizing };
     window.addEventListener("pointermove", movePointer);
-    window.addEventListener("pointerup", stopPointer, {once:true});
+    window.addEventListener("pointerup", stopPointer, { once:true });
+    window.addEventListener("pointercancel", stopPointer, { once:true });
   }
   function movePointer(ev) {
     if (!pointer) return;
     const item = state.items.find(i => i.id === pointer.id); if (!item) return;
-    const dx = (ev.clientX-pointer.startX)*pointer.scaleX, dy = (ev.clientY-pointer.startY)*pointer.scaleY;
-    if (pointer.resizing) { item.w = Math.max(8,Math.min(400,pointer.w+dx)); item.h = Math.max(8,Math.min(600,pointer.h+dy)); }
-    else { item.x = Math.max(0,Math.min(420-item.w,pointer.x+dx)); item.y = Math.max(0,Math.min(620-item.h,pointer.y+dy)); }
+    const point = canvasPoint(ev);
+    const dx = point.x-pointer.startX, dy = point.y-pointer.startY;
+    if (pointer.resizing) {
+      item.w = Math.max(8,Math.min(420-item.x,pointer.w+dx));
+      item.h = Math.max(8,Math.min(620-item.y,pointer.h+dy));
+    } else {
+      item.x = Math.max(0,Math.min(420-item.w,pointer.x+dx));
+      item.y = Math.max(0,Math.min(620-item.h,pointer.y+dy));
+    }
     render();
   }
-  function stopPointer() { pointer = null; window.removeEventListener("pointermove", movePointer); }
+  function stopPointer() {
+    pointer = null;
+    window.removeEventListener("pointermove", movePointer);
+    window.removeEventListener("pointerup", stopPointer);
+    window.removeEventListener("pointercancel", stopPointer);
+  }
   function reorder(id, direction) {
     const item = selectedItem(); if (!item) return;
     const layers = state.items.map(i=>i.layer);
