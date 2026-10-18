@@ -298,6 +298,12 @@
     await updateAccountUI();
     await loadSaved();
   });
+  const settingsPanel=$("settingsPanel"),settingsBtn=$("settingsBtn"),themeToggle=$("themeToggle");
+  function applyTheme(theme){const dark=theme==="dark";document.body.dataset.theme=dark?"dark":"light";themeToggle.setAttribute("aria-checked",String(dark));$("themeLabel").textContent=dark?"Dark":"Light";document.querySelector('meta[name="theme-color"]')?.setAttribute("content",dark?"#11141b":"#f7f8fb");try{localStorage.setItem("nova-studio-theme",dark?"dark":"light");}catch{}}
+  try{applyTheme(localStorage.getItem("nova-studio-theme")==="dark"?"dark":"light");}catch{applyTheme("light");}
+  settingsBtn.addEventListener("click",()=>{const opening=settingsPanel.hidden;settingsPanel.hidden=!opening;settingsBtn.setAttribute("aria-expanded",String(opening));if(opening)settingsPanel.scrollIntoView({behavior:"smooth",block:"nearest"});});
+  $("closeSettingsBtn").addEventListener("click",()=>{settingsPanel.hidden=true;settingsBtn.setAttribute("aria-expanded","false");settingsBtn.focus();});
+  themeToggle.addEventListener("click",()=>applyTheme(document.body.dataset.theme==="dark"?"light":"dark"));
   $("resetBtn").addEventListener("click",()=>{if(confirm("Reset the current Horizon design?")){reset();toast("Canvas reset");}});
   $("clearSavedBtn").addEventListener("click",async()=>{if(!state.saved.length)return;if(confirm(state.user?"Delete all saved concepts from your account?":"Delete all saved concepts from this browser?")){if(state.user){const {error}=await supabase.from("designs").delete().eq("user_id",state.user.id);if(error){toast("Could not clear cloud designs");return;}}state.saved=[];persistSaved();toast("Saved concepts cleared");}});
   $("exportBtn").addEventListener("click",()=>{
