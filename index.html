@@ -1,35 +1,60 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#171326">
-<meta name="description" content="Create colorful 3D iPhone-inspired designs with phoneLab.">
-<title>phoneLab — iPhone Designer</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f7f8fb">
+<meta name="description" content="Design Nova Horizon smartphones with a modular, interactive phone editor. Move, rotate, resize, and recolor every component.">
+<title>Nova Studio — Horizon Designer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
-<script type="module" src="main.js"></script>
+<script defer src="main.js"></script>
 </head>
 <body>
-<header class="topbar"><a class="brand" href="#">✳ phone<span>lab</span></a><div class="top-actions"><span class="live-dot"></span> YOUR DESIGN STUDIO <button id="saveTop" class="button small">Save design ↗</button></div></header>
-<main class="shell">
-<section class="hero"><div class="eyebrow">✦ THE PHONE PLAYGROUND</div><h1>Make it <span>uniquely yours.</span></h1><p>Mix colors, switch up the finish, and spin your creation around. Your next favorite phone starts here.</p><div class="tags"><span>↻ Interactive 3D</span><span>◈ Color your world</span><span>♡ Made by you</span></div><div class="hero-orb orb1"></div><div class="hero-orb orb2"></div></section>
-<section class="studio">
-<div class="preview panel"><div class="panel-head"><div><div class="kicker">LIVE PREVIEW <i class="live-dot"></i></div><h2 id="previewTitle">iPhone 17 Pro</h2><p id="previewSubtitle">Cosmic Orange · Matte finish</p>
-<a id="specReference" class="spec-reference" href="https://www.apple.com/ae/iphone/compare/" target="_blank" rel="noopener noreferrer">Browse official Apple specifications ↗</a></div><div class="view-buttons"><button id="backView" title="Show back" aria-label="Show back">◧</button><button id="frontView" class="active" title="Show front" aria-label="Show front">▯</button><button id="resetView" title="Reset view" aria-label="Reset view">↻</button></div></div>
-<div id="canvasWrap" class="canvas-wrap"><div id="loadingLabel" class="loading">Building your 3D canvas…</div><div class="canvas-hint">DRAG TO ROTATE <b>•</b> SCROLL TO ZOOM</div></div>
-<div class="preview-foot"><div class="finish"><span id="finishDot"></span><div><strong id="finishName">Starlight</strong><small>Selected finish</small></div></div><button id="downloadImage" class="button primary">⇩ Export image</button></div>
-</div>
-<aside class="controls panel"><div class="panel-head"><div><div class="kicker">DESIGN CONTROLS</div><h2>Build your look</h2></div><span class="step">01 / 04</span></div>
-<div class="control"><label for="modelSelect"><b>01</b> Choose your model</label><select id="modelSelect"><option>iPhone 17 Pro</option><option>iPhone 17 Pro Max</option><option>iPhone 17</option><option>iPhone 16 Pro</option><option>iPhone 16 Pro Max</option><option>iPhone 16</option><option>iPhone 15 Pro</option><option>iPhone 15 Pro Max</option><option>iPhone 15</option><option>iPhone 14 Pro</option><option>iPhone 14</option><option>iPhone 13</option><option>iPhone 12</option><option>iPhone 11</option><option>iPhone XS</option><option>iPhone X</option><option>iPhone 8</option><option>iPhone SE (2nd / 3rd gen)</option><option>My concept phone</option></select><small>Model-specific proportions, camera layouts, and hardware details are approximations based on published specifications—not official CAD replicas.</small></div>
-<div class="control"><div class="label"><b>02</b> Pick your color</div><div id="colorSwatches" class="swatches">
-<button class="swatch active" data-color="#f4f0e9" data-name="Starlight" style="--c:#f4f0e9" aria-label="Starlight"></button><button class="swatch" data-color="#23242a" data-name="Midnight" style="--c:#23242a" aria-label="Midnight"></button><button class="swatch" data-color="#f5a27b" data-name="Cosmic Orange" style="--c:#f5a27b" aria-label="Cosmic Orange"></button><button class="swatch" data-color="#9bb7a6" data-name="Sage Green" style="--c:#9bb7a6" aria-label="Sage Green"></button><button class="swatch" data-color="#b6a5e8" data-name="Lilac Dream" style="--c:#b6a5e8" aria-label="Lilac Dream"></button><button class="swatch" data-color="#88bce7" data-name="Sky Blue" style="--c:#88bce7" aria-label="Sky Blue"></button><button class="swatch" data-color="#e5a5bc" data-name="Pink Pop" style="--c:#e5a5bc" aria-label="Pink Pop"></button><button class="swatch" data-color="#d7d9dd" data-name="Silver Frost" style="--c:#d7d9dd" aria-label="Silver Frost"></button><button class="swatch" data-color="#4d658a" data-name="Deep Blue" style="--c:#4d658a" aria-label="Deep Blue"></button><button class="swatch" data-color="#bdc77e" data-name="Lime Zest" style="--c:#bdc77e" aria-label="Lime Zest"></button></div><div class="custom"><label for="customColor">Or make your own</label><input type="color" id="customColor" value="#f4f0e9"></div></div>
-<div class="control"><div class="label"><b>03</b> Finish & accessories</div><div class="segments"><button class="segment active" data-finish="matte">Matte</button><button class="segment" data-finish="glossy">Glossy</button><button class="segment" data-finish="metal">Metal</button></div><label class="toggle"><span>▱ <span><strong>Clear case</strong><small>Transparent protective shell</small></span></span><input id="caseToggle" type="checkbox"><i></i></label><label class="toggle"><span>✦ <span><strong>Star sticker</strong><small>A little personality</small></span></span><input id="stickerToggle" type="checkbox"><i></i></label></div>
-<div class="control"><label for="designName"><b>04</b> Name your creation</label><input id="designName" class="text-input" maxlength="40" value="My dream iPhone" placeholder="Give your design a name"></div>
-<div class="actions"><button id="resetDesign" class="button outline">Reset</button><button id="saveDesign" class="button primary wide">♡ Save design</button></div><p class="privacy">Saved designs stay in this browser on this device.</p>
-</aside></section>
-<section class="collection"><div class="collection-head"><div><div class="kicker">YOUR COLLECTION</div><h2>Designs you love <span id="savedCount">0</span></h2></div><button id="clearSaved" class="clear">Clear collection</button></div><div id="savedDesigns" class="saved-grid"><div class="empty"><span>✧</span><strong>Your gallery is waiting</strong><p>Save a design to start your personal collection.</p></div></div></section>
-<footer><a class="brand" href="#">✳ phone<span>lab</span></a><p>An independent creative concept. Not affiliated with or endorsed by Apple.</p><a href="https://threejs.org/" target="_blank" rel="noreferrer">Built with Three.js ↗</a></footer>
-</main><div id="toast" class="toast" role="status" aria-live="polite"></div>
-</body></html>
+<header class="topbar">
+  <a class="brand" href="#" aria-label="Nova Studio home"><span class="brand-mark">N</span><span>NOVA <small>STUDIO</small></span></a>
+  <div class="top-status"><span class="status-dot"></span> HORIZON CONCEPT LAB</div>
+  <div class="top-actions"><button class="button quiet" id="resetBtn">Reset</button><button class="button primary" id="exportBtn">Export design ↗</button></div>
+</header>
+<main class="app-shell">
+  <section class="intro"><div><div class="eyebrow">NOVA PRODUCT DESIGN · CONCEPT 001</div><h1>Meet your canvas.<br><span>Build Horizon.</span></h1><p>Design our first Nova smartphone by arranging every component yourself. Drag it, rotate it, resize it, and make the colours yours.</p></div><div class="intro-chip"><span>01</span><div><strong>Horizon</strong><small>First smartphone concept</small></div></div></section>
+  <section class="workspace">
+    <aside class="panel component-panel">
+      <div class="panel-heading"><div><div class="eyebrow">01 / COMPONENTS</div><h2>Build the phone</h2></div></div>
+      <p class="panel-help">Add pieces to the canvas. Select any piece to edit its properties.</p>
+      <div class="component-list" id="componentList">
+        <button class="component-choice" data-add="body"><span class="component-icon body-icon"></span><span><b>Phone body</b><small>Main frame</small></span><span class="plus">+</span></button>
+        <button class="component-choice" data-add="screen"><span class="component-icon screen-icon"></span><span><b>Display</b><small>Screen panel</small></span><span class="plus">+</span></button>
+        <button class="component-choice" data-add="camera"><span class="component-icon camera-icon"></span><span><b>Camera module</b><small>Rear camera island</small></span><span class="plus">+</span></button>
+        <button class="component-choice" data-add="lens"><span class="component-icon lens-icon"></span><span><b>Camera lens</b><small>Individual lens</small></span><span class="plus">+</span></button>
+        <button class="component-choice" data-add="flash"><span class="component-icon flash-icon"></span><span><b>Flash</b><small>LED flash</small></span><span class="plus">+</span></button>
+        <button class="component-choice" data-add="logo"><span class="component-icon logo-icon">N</span><span><b>Nova logo</b><small>Brand mark</small></span><span class="plus">+</span></button>
+        <button class="component-choice" data-add="button"><span class="component-icon button-icon"></span><span><b>Side button</b><small>Power / volume</small></span><span class="plus">+</span></button>
+        <button class="component-choice" data-add="detail"><span class="component-icon detail-icon"></span><span><b>Custom detail</b><small>Decorative element</small></span><span class="plus">+</span></button>
+      </div>
+      <div class="panel-note"><span>✦</span><p><b>Design tip</b><br>Click a piece on the canvas to select it. Drag to move; use the corner handle to resize.</p></div>
+    </aside>
+    <section class="panel canvas-panel">
+      <div class="canvas-toolbar"><div><div class="eyebrow">LIVE CANVAS</div><h2 id="canvasTitle">Horizon · Rear design</h2></div><div class="toolbar-actions"><button class="icon-button active" id="rearViewBtn" title="Rear view">Rear</button><button class="icon-button" id="frontViewBtn" title="Front view">Front</button><button class="icon-button" id="gridBtn" title="Toggle grid" aria-pressed="true">Grid</button></div></div>
+      <div class="canvas-area" id="canvasArea"><div class="canvas-grid" id="canvasGrid"></div><svg id="designCanvas" viewBox="0 0 420 620" role="img" aria-label="Interactive Nova Horizon phone design canvas"><rect x="0" y="0" width="420" height="620" fill="transparent"/></svg><div class="canvas-instructions"><span>↖</span> Select and drag components to arrange your design</div></div>
+      <div class="canvas-footer"><div class="selection-status"><span class="status-dot"></span><span id="selectionLabel">No component selected</span></div><div class="canvas-footer-actions"><button class="text-button" id="duplicateBtn">Duplicate</button><button class="text-button danger" id="deleteBtn">Delete selected</button></div></div>
+    </section>
+    <aside class="panel properties-panel">
+      <div class="panel-heading"><div><div class="eyebrow">02 / PROPERTIES</div><h2>Fine-tune it</h2></div></div>
+      <div id="emptyProperties" class="empty-properties"><div class="empty-icon">⌖</div><b>Select a component</b><p>Choose a piece on the canvas to edit its colour, position, angle, and size.</p></div>
+      <div id="propertyControls" class="property-controls" hidden>
+        <label class="field-label" for="componentName">Component name</label><input class="text-input" id="componentName" maxlength="36">
+        <div class="property-section"><div class="section-label">APPEARANCE</div><label class="field-label" for="componentColor">Colour</label><div class="color-row"><input type="color" id="componentColor" value="#d9dde5"><input class="text-input hex-input" id="hexColor" value="#D9DDE5" maxlength="7" aria-label="Hex colour"></div><div class="preset-colors" id="presetColors"><button style="--swatch:#d9dde5" data-color="#d9dde5" aria-label="Silver"></button><button style="--swatch:#22252d" data-color="#22252d" aria-label="Graphite"></button><button style="--swatch:#91a8c7" data-color="#91a8c7" aria-label="Blue"></button><button style="--swatch:#a7b69b" data-color="#a7b69b" aria-label="Sage"></button><button style="--swatch:#e4c6a6" data-color="#e4c6a6" aria-label="Sand"></button><button style="--swatch:#ffffff" data-color="#ffffff" aria-label="White"></button></div></div>
+        <div class="property-section"><div class="section-label">TRANSFORM</div><div class="field-grid"><label class="field-label">X position <input type="number" id="posX" min="0" max="420" step="1"></label><label class="field-label">Y position <input type="number" id="posY" min="0" max="620" step="1"></label></div><label class="range-label" for="rotation"><span>Rotation</span><output id="rotationValue">0°</output></label><input class="range" type="range" id="rotation" min="-180" max="180" value="0"><div class="field-grid size-fields"><label class="field-label">Width <input type="number" id="sizeW" min="8" max="420" step="1"></label><label class="field-label">Height <input type="number" id="sizeH" min="8" max="620" step="1"></label></div><p class="mini-help">You can also drag the selected piece to move it and drag its corner handle to resize it.</p></div>
+        <div class="property-actions"><button class="button outline" id="bringFrontBtn">Bring to front</button><button class="button outline" id="sendBackBtn">Send backward</button></div>
+      </div>
+      <div class="save-box"><div><b>Keep this concept</b><small>Save it in this browser to return later.</small></div><button class="button primary full" id="saveBtn">Save Horizon ↗</button></div>
+    </aside>
+  </section>
+  <section class="saved-panel panel"><div class="saved-heading"><div><div class="eyebrow">YOUR CONCEPTS</div><h2>Saved designs <span id="savedCount">0</span></h2></div><button class="text-button danger" id="clearSavedBtn">Clear all</button></div><div id="savedDesigns" class="saved-grid"><div class="saved-empty">Your saved Horizon concepts will appear here.</div></div></section>
+  <footer><a class="brand footer-brand" href="#"><span class="brand-mark">N</span><span>NOVA <small>STUDIO</small></span></a><p>A fictional Nova product design playground. Your designs are stored locally in this browser.</p><span>CONCEPT 001 · HORIZON</span></footer>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
