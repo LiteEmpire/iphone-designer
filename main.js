@@ -179,6 +179,7 @@
     $("frontViewBtn").classList.toggle("active", view === "front");
     render();
   }
+  $("mobileNudge").addEventListener("click",ev=>{const btn=ev.target.closest("[data-nudge]");if(!btn)return;const item=selectedItem();if(!item){toast("Select a component first");return;}const step=4;const direction=btn.dataset.nudge;if(direction==="up")item.y=Math.max(0,item.y-step);if(direction==="down")item.y=Math.min(620-item.h,item.y+step);if(direction==="left")item.x=Math.max(0,item.x-step);if(direction==="right")item.x=Math.min(420-item.w,item.x+step);render();});
   $("componentList").addEventListener("click",ev=>{const btn=ev.target.closest("[data-add]");if(btn)addItem(btn.dataset.add);});
   $("componentName").addEventListener("input",ev=>{const i=selectedItem();if(i){i.name=ev.target.value||"Component";$("selectionLabel").textContent=i.name+" selected";}});
   $("componentColor").addEventListener("input",ev=>setColor(ev.target.value));
