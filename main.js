@@ -85,16 +85,18 @@
       [[x+10,y+105],[x+w-10,y+105],[x+10,y+285],[x+w-10,y+285],[x+18,y+h-25],[x+w-18,y+h-25]].forEach(([cx,cy])=>{
         shape.appendChild(el("circle",{cx,cy,r:4,fill:"#4b5565",stroke:"#e2e8f0","stroke-width":1.3}));
       });
-      // Labels identify the matching component bays in the chassis.
+      // Bay labels sit on the chassis rails OUTSIDE the cutouts, so installed
+      // components cannot cover them. Each label has a dark plaque for contrast.
       const portLabels = [
-        {text:"CAMERA BAY", x:x+43, y:y+61},
-        {text:"MOTHERBOARD", x:x+146, y:y+112},
-        {text:"BATTERY BAY", x:x+53, y:y+222},
-        {text:"LOWER BOARD", x:x+146, y:y+331},
-        {text:"USB-C", x:x+w/2, y:y+h-2}
+        {text:"CAMERA", x:x+43, y:y+8, width:48},
+        {text:"MOTHERBOARD BAY", x:x+146, y:y+15, width:88},
+        {text:"BATTERY BAY", x:x+53, y:y+138, width:68},
+        {text:"LOWER BOARD", x:x+146, y:y+303, width:72},
+        {text:"USB-C PORT", x:x+w/2, y:y+h-12, width:64}
       ];
       portLabels.forEach(label => {
-        const t=el("text",{x:label.x,y:label.y,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":8,"font-weight":"700",fill:"#e2e8f0","pointer-events":"none"});
+        shape.appendChild(el("rect",{x:label.x-label.width/2,y:label.y-8,width:label.width,height:12,rx:3,fill:"#273244",stroke:"#d8dee8","stroke-width":0.7,"pointer-events":"none"}));
+        const t=el("text",{x:label.x,y:label.y,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":7.5,"font-weight":"700",fill:"#ffffff","pointer-events":"none"});
         t.textContent=label.text; shape.appendChild(t);
       });
       // Small rail details make the frame look machined rather than like a plain plate.
