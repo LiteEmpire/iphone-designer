@@ -16,9 +16,9 @@
 <header class="topbar">
   <a class="brand" href="#" aria-label="Nova Studio home"><span class="brand-mark">N</span><span>NOVA <small>STUDIO</small></span></a>
   <div class="top-status"><span class="status-dot"></span> HORIZON CONCEPT LAB</div>
-  <div class="top-actions"><button class="button quiet" id="signInBtn">Sign in with Google</button><span id="accountStatus" aria-live="polite" style="align-self:center;font-size:11px;color:#6b7280"></span><button class="button quiet" id="signOutBtn" hidden>Sign out</button><button class="button quiet" id="resetBtn">Reset</button><button class="button primary" id="exportBtn">Export design ↗</button></div>
+  <div class="top-actions"><button class="button quiet" id="signInBtn">Sign in with Google</button><span id="accountStatus" aria-live="polite" style="align-self:center;font-size:11px;color:#6b7280"></span><button class="button quiet" id="signOutBtn" hidden>Sign out</button><button class="button quiet" id="settingsBtn" aria-expanded="false" aria-controls="settingsPanel">Settings</button><button class="button quiet" id="resetBtn">Reset</button><button class="button primary" id="exportBtn">Export design ↗</button></div>
 </header>
-<main class="app-shell">
+<section class="settings-panel panel" id="settingsPanel" hidden aria-label="Settings"><div class="settings-heading"><div><div class="eyebrow">PREFERENCES</div><h2>Settings</h2></div><button class="icon-button" id="closeSettingsBtn" aria-label="Close settings">✕</button></div><div class="setting-row"><div class="setting-copy"><b>Theme</b><small>Switch Nova Studio between light and dark appearance.</small></div><button type="button" class="theme-toggle" id="themeToggle" role="switch" aria-checked="false"><span class="toggle-track"><span class="toggle-thumb"></span></span><span id="themeLabel">Light</span></button></div></section><main class="app-shell">
   <section class="intro"><div><div class="eyebrow">NOVA PRODUCT DESIGN · CONCEPT 001</div><h1>Meet your canvas.<br><span>Build Horizon.</span></h1><p>Design our first Nova smartphone by arranging every component yourself. Drag it, rotate it, resize it, and make the colours yours.</p></div><div class="intro-chip"><span>01</span><div><strong>Horizon</strong><small>First smartphone concept</small></div></div></section>
   <section class="workspace">
     <aside class="panel explorer-panel">
