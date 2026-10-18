@@ -1,257 +1,205 @@
-import * as THREE from "three";
-
-const $ = (id) => document.getElementById(id);
-const wrap = $("canvasWrap");
-const state = { model:"iPhone 17 Pro", color:"#f4f0e9", colorName:"Starlight", finish:"matte", clearCase:false, sticker:false, name:"My dream iPhone", view:"front" };
-
-// Dimensions are based on Apple's published height, width and depth specifications where available.
-// Ratios are preserved in the preview; the generation-specific details below are modeled separately.
-const models = {
- "iPhone 17 Pro": {mm:[150,71.9,8.75],family:"pro17",edge:"flat",screen:"island",cams:3,camStyle:"bar",action:true,cameraControl:true,corner:.105,bezel:.035},
- "iPhone 17 Pro Max": {mm:[163.4,78,8.75],family:"pro17",edge:"flat",screen:"island",cams:3,camStyle:"bar",action:true,cameraControl:true,corner:.11,bezel:.035},
- "iPhone 17": {mm:[149.6,71.5,7.95],family:"base17",edge:"flat",screen:"island",cams:2,camStyle:"verticalPill",action:true,cameraControl:true,corner:.12,bezel:.036},
- "iPhone 16 Pro": {mm:[149.6,71.5,8.25],family:"pro16",edge:"flat",screen:"island",cams:3,camStyle:"squareTriple",action:true,cameraControl:true,corner:.085,bezel:.034},
- "iPhone 16 Pro Max": {mm:[163,77.6,8.25],family:"pro16",edge:"flat",screen:"island",cams:3,camStyle:"squareTriple",action:true,cameraControl:true,corner:.09,bezel:.034},
- "iPhone 16": {mm:[147.6,71.6,7.8],family:"base16",edge:"flat",screen:"island",cams:2,camStyle:"verticalPill",action:true,cameraControl:true,corner:.12,bezel:.036},
- "iPhone 15 Pro": {mm:[146.6,70.6,8.25],family:"pro15",edge:"softFlat",screen:"island",cams:3,camStyle:"squareTriple",action:true,cameraControl:false,corner:.085,bezel:.034},
- "iPhone 15 Pro Max": {mm:[159.9,76.7,8.25],family:"pro15",edge:"softFlat",screen:"island",cams:3,camStyle:"squareTriple",action:true,cameraControl:false,corner:.09,bezel:.034},
- "iPhone 15": {mm:[147.6,71.6,7.8],family:"base15",edge:"softFlat",screen:"island",cams:2,camStyle:"diagonal",action:false,cameraControl:false,corner:.12,bezel:.038},
- "iPhone 14 Pro": {mm:[147.5,71.5,7.85],family:"pro14",edge:"flat",screen:"island",cams:3,camStyle:"squareTriple",action:false,cameraControl:false,corner:.085,bezel:.035},
- "iPhone 14": {mm:[146.7,71.5,7.8],family:"base14",edge:"flat",screen:"notch",cams:2,camStyle:"diagonal",action:false,cameraControl:false,corner:.12,bezel:.04},
- "iPhone 13": {mm:[146.7,71.5,7.65],family:"base13",edge:"flat",screen:"notchSmall",cams:2,camStyle:"diagonal",action:false,cameraControl:false,corner:.12,bezel:.042},
- "iPhone 12": {mm:[146.7,71.5,7.4],family:"base12",edge:"flat",screen:"notchSmall",cams:2,camStyle:"diagonal",action:false,cameraControl:false,corner:.12,bezel:.043},
- "iPhone 11": {mm:[150.9,75.7,8.3],family:"base11",edge:"round",screen:"notch",cams:2,camStyle:"squareDual",action:false,cameraControl:false,corner:.16,bezel:.055},
- "iPhone XS": {mm:[143.6,70.9,7.7],family:"xs",edge:"round",screen:"notch",cams:2,camStyle:"vertical",action:false,cameraControl:false,corner:.16,bezel:.055},
- "iPhone X": {mm:[143.6,70.9,7.7],family:"x",edge:"round",screen:"notch",cams:2,camStyle:"vertical",action:false,cameraControl:false,corner:.16,bezel:.055},
- "iPhone 8": {mm:[138.4,67.3,7.3],family:"home",edge:"round",screen:"home",cams:1,camStyle:"single",action:false,cameraControl:false,corner:.13,bezel:.095},
- "iPhone SE (2nd / 3rd gen)": {mm:[138.4,67.3,7.3],family:"home",edge:"round",screen:"home",cams:1,camStyle:"single",action:false,cameraControl:false,corner:.13,bezel:.095},
- "My concept phone": {mm:[150,72,8.2],family:"concept",edge:"flat",screen:"island",cams:3,camStyle:"squareTriple",action:true,cameraControl:true,corner:.11,bezel:.04}
-};
-const appleModelSlugs = {
- "iPhone 17 Pro":"iphone-17-pro",
- "iPhone 17 Pro Max":"iphone-17-pro-max",
- "iPhone 17":"iphone-17",
- "iPhone 16 Pro":"iphone-16-pro",
- "iPhone 16 Pro Max":"iphone-16-pro-max",
- "iPhone 16":"iphone-16",
- "iPhone 15 Pro":"iphone-15-pro",
- "iPhone 15 Pro Max":"iphone-15-pro-max",
- "iPhone 15":"iphone-15",
- "iPhone 14 Pro":"iphone-14-pro",
- "iPhone 14":"iphone-14",
- "iPhone 13":"iphone-13",
- "iPhone 12":"iphone-12",
- "iPhone 11":"iphone-11",
- "iPhone XS":"iphone-xs",
- "iPhone X":"iphone-x",
- "iPhone 8":"iphone-8",
- "iPhone SE (2nd / 3rd gen)":"iphone-se-3rd-generation"
-};
-let scene,camera,renderer,phone,bodyMat,screenMat,caseMesh,stickerMesh,dragging=false,lastX=0,lastY=0,toastTimer;
-const mats=(color,rough=.35,metal=0)=>new THREE.MeshStandardMaterial({color,roughness:rough,metalness:metal});
-function roundedBox(w,h,d,r,material){
- const shape=new THREE.Shape(),x=-w/2,y=-h/2;
- shape.moveTo(x+r,y);shape.lineTo(x+w-r,y);shape.quadraticCurveTo(x+w,y,x+w,y+r);
- shape.lineTo(x+w,y+h-r);shape.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
- shape.lineTo(x+r,y+h);shape.quadraticCurveTo(x,y+h,x,y+h-r);
- shape.lineTo(x,y+r);shape.quadraticCurveTo(x,y,x+r,y);
- const geo=new THREE.ExtrudeGeometry(shape,{depth:d,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:Math.min(r*.24,d*.16),bevelThickness:Math.min(r*.24,d*.16),curveSegments:12});
- geo.translate(0,0,-d/2);return new THREE.Mesh(geo,material);
-}
-function addBox(parent,w,h,d,x,y,z,mat,r=.02){const mesh=roundedBox(w,h,d,r,mat);mesh.position.set(x,y,z);parent.add(mesh);return mesh;}
-function addDisc(parent,r,depth,x,y,z,mat,segments=32){const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,depth,segments),mat);mesh.rotation.x=Math.PI/2;mesh.position.set(x,y,z);parent.add(mesh);return mesh;}
-function addSlot(parent,w,h,d,x,y,z,mat){return addBox(parent,w,h,d,x,y,z,mat,Math.min(w,h)*.48);}
-function addSideSlot(parent, side, width, height, protrusion, x, y, z, material) {
- const mesh=roundedBox(width,height,protrusion,Math.min(width,height)*.45,material);
- mesh.rotation.y=side==="right"?Math.PI/2:-Math.PI/2;
- mesh.position.set(x,y,z);parent.add(mesh);return mesh;
-}
-function cameraLens(parent,x,y,z,r,scale=1){
- const rim=mats("#171923",.24,.42),glass=mats("#243c60",.12,.32),glint=mats("#83bce9",.14,.22);
- addDisc(parent,r*1.16,.025,x,y,z,rim,40);addDisc(parent,r,.016,x,y,z-.018,glass,40);
- const shine=new THREE.Mesh(new THREE.CircleGeometry(r*.24,20),glint);shine.position.set(x-r*.25,y+r*.25,z-.029);shine.rotation.y=Math.PI;parent.add(shine);
- const inner=new THREE.Mesh(new THREE.CircleGeometry(r*.12,16),mats("#111b30",.1,.1));inner.position.set(x+r*.18,y-r*.18,z-.03);parent.add(inner);
-}
-function addCameraIsland(parent,cfg,w,h,d,metalColor){
- const z=-d/2-.014, x0=-w*.285, y0=h*.325;
- const islandColor=cfg.family==="base11" || cfg.family==="base12" || cfg.family==="base13" || cfg.family==="base14" || cfg.family==="base15" || cfg.family==="base16" || cfg.family==="base17" ? state.color : metalColor;
- const islandMat=mats(islandColor,.4,.18);
- const darkIsland=mats("#10131b",.25,.18);
- const lensR=w*.068;
- if(cfg.camStyle==="bar"){
-   // 17 Pro generation: wide horizontal camera plateau, with the camera cluster on the left.
-   addBox(parent,w*.91,h*.215,.045,0,y0,z,islandMat,w*.07);
-   cameraLens(parent,-w*.30,y0+h*.045,z-.035,lensR);
-   cameraLens(parent,-w*.125,y0+h*.045,z-.035,lensR);
-   cameraLens(parent,-w*.30,y0-h*.055,z-.035,lensR);
-   addDisc(parent,w*.035,.018,w*.245,y0+h*.045,z-.037,mats("#f8f1dd",.22),28);
-   addDisc(parent,w*.022,.016,w*.245,y0-h*.055,z-.037,darkIsland,24);
-   return;
- }
- if(cfg.camStyle==="verticalPill"){
-   addBox(parent,w*.32,h*.235,.045,x0,y0,z,islandMat,w*.14);
-   cameraLens(parent,x0,y0+h*.052,z-.035,lensR);
-   cameraLens(parent,x0,y0-h*.052,z-.035,lensR);
-   addDisc(parent,w*.027,.014,x0+w*.095,y0-h*.052,z-.037,mats("#fff0c9",.22),24);
-   addDisc(parent,w*.014,.014,x0+w*.095,y0+h*.052,z-.037,darkIsland,20);
-   return;
- }
- if(cfg.camStyle==="squareTriple"){
-   addBox(parent,w*.49,h*.245,.05,x0,y0,z,islandMat,w*.065);
-   cameraLens(parent,x0-w*.105,y0+h*.052,z-.04,lensR);
-   cameraLens(parent,x0+w*.105,y0+h*.052,z-.04,lensR);
-   cameraLens(parent,x0-w*.105,y0-h*.052,z-.04,lensR);
-   addDisc(parent,w*.031,.016,x0+w*.105,y0-h*.052,z-.042,mats("#fff0c9",.22),24);
-   addDisc(parent,w*.018,.016,x0+w*.105,y0,z-.042,darkIsland,20);
-   return;
- }
- if(cfg.camStyle==="squareDual"){
-   addBox(parent,w*.46,h*.235,.05,x0,y0,z,islandMat,w*.065);
-   cameraLens(parent,x0-w*.085,y0+h*.05,z-.04,lensR*1.03);
-   cameraLens(parent,x0+w*.085,y0-h*.05,z-.04,lensR*1.03);
-   addDisc(parent,w*.028,.016,x0+w*.10,y0+h*.05,z-.042,mats("#fff0c9",.22),24);
-   return;
- }
- if(cfg.camStyle==="diagonal"){
-   addBox(parent,w*.405,h*.205,.045,x0,y0,z,islandMat,w*.07);
-   cameraLens(parent,x0-w*.083,y0+h*.047,z-.035,lensR);
-   cameraLens(parent,x0+w*.083,y0-h*.047,z-.035,lensR);
-   addDisc(parent,w*.028,.014,x0+w*.095,y0+h*.047,z-.037,mats("#fff0c9",.22),24);
-   addDisc(parent,w*.014,.014,x0-w*.095,y0-h*.047,z-.037,darkIsland,20);
-   return;
- }
- if(cfg.camStyle==="vertical"){
-   addBox(parent,w*.30,h*.245,.045,x0,y0,z,islandMat,w*.06);
-   cameraLens(parent,x0,y0+h*.053,z-.035,lensR);
-   cameraLens(parent,x0,y0-h*.053,z-.035,lensR);
-   // On the X / XS family, the flash sits between the two vertically stacked lenses.
-   addDisc(parent,w*.025,.014,x0+w*.10,y0,z-.037,mats("#fff0c9",.22),24);
-   return;
- }
- // iPhone 8 / SE: one rear camera with a small individual rim, not a multi-camera island.
- cameraLens(parent,x0,y0,z-.025,lensR*1.08);
- addDisc(parent,w*.026,.014,x0+w*.105,y0,z-.027,mats("#fff0c9",.22),24);
-}
-function buildPhone(){
- if(phone)scene.remove(phone);
- const cfg=models[state.model]||models["iPhone 17 Pro"];
- const [mmH,mmW,mmD]=cfg.mm;
- const h=mmH/75,w=mmW/75,d=mmD/75;
- phone=new THREE.Group();scene.add(phone);
- const finishMetal=state.finish==="metal";
- const frameColor=finishMetal?"#c3c6ce":state.color;
- const metal=mats(frameColor,state.finish==="matte"?.72:state.finish==="glossy"?.13:.28,finishMetal?.82:.42);
- bodyMat=metal;
- // Aluminum / titanium-like frame, with generation-specific roundedness.
- addBox(phone,w,h,d,0,0,0,metal,cfg.corner);
- const backColor=mats(state.color,state.finish==="glossy"?.16:state.finish==="matte"?.72:.32,finishMetal?.15:.03);
- addBox(phone,w-.018,h-.018,.012,0,0,-d/2-.004,backColor,Math.max(.045,cfg.corner-.012));
- const screenGlass=mats("#05070d",.14,.08);
- addBox(phone,w-.018,h-.018,.012,0,0,d/2+.004,screenGlass,Math.max(.045,cfg.corner-.012));
- const screen=mats("#080b13",.13,.05);screenMat=screen;
- const bezel=cfg.bezel;
- if(cfg.screen==="home"){
-   // The 4.7-inch Home-button designs have visibly broad top and bottom bezels and a 16:9 display.
-   addBox(phone,w*.84,h*.685,.008,0,h*.015,d/2+.012,screen,w*.045);
-   addSlot(phone,w*.25,.025,.012,0,h*.405,d/2+.016,mats("#151923",.2,.2));
-   const homeR=w*.095;
-   addDisc(phone,homeR,.018,0,-h*.405,d/2+.014,mats("#171923",.28,.18),40);
-   const homeRing=new THREE.Mesh(new THREE.TorusGeometry(homeR*.72,.004,8,40),mats("#5a5c64",.28,.3));
-   homeRing.position.set(0,-h*.405,d/2+.027);phone.add(homeRing);
- } else {
-   const sw=w-bezel*2, sh=h-bezel*2;
-   addBox(phone,sw,sh,.008,0,0,d/2+.012,screen,Math.max(.04,cfg.corner-bezel*.6));
-   const edge=mats("#090b12",.2,.2);
-   if(cfg.screen==="island"){
-     addSlot(phone,w*.265,.066,.014,0,h*.405,d/2+.021,edge);
-     addDisc(phone,w*.016,.014,w*.102,h*.405,d/2+.022,mats("#19253c",.2,.2),24);
-   } else {
-     const notchW=cfg.screen==="notchSmall"?w*.325:w*.385;
-     const notchH=cfg.screen==="notchSmall"?.09:.105;
-     addSlot(phone,notchW,notchH,.014,0,h*.425,d/2+.021,edge);
-     addDisc(phone,w*.017,.014,notchW*.255,h*.425,d/2+.022,mats("#1b2b45",.2,.2),24);
-     addBox(phone,notchW*.22,.008,.012,0,h*.385,d/2+.022,mats("#282b34",.25,.1),.004);
-   }
- }
- // Side controls are mounted to the side rails, not laid flat on the front glass.
- const buttonMat=mats(finishMetal?"#d1d3d9":state.color,.3,.55);
- const rightX=w/2+.008,leftX=-w/2-.008,sideDepth=d*.42;
- addSideSlot(phone,"right",sideDepth,.17,.024,rightX,h*.205,0,buttonMat);
- if(cfg.cameraControl) addSideSlot(phone,"right",sideDepth,.145,.024,rightX,-h*.28,0,buttonMat);
- if(cfg.action) addSideSlot(phone,"left",sideDepth,.072,.024,leftX,h*.285,0,buttonMat);
- else addSideSlot(phone,"left",sideDepth,.052,.024,leftX,h*.315,0,buttonMat);
- addSideSlot(phone,"left",sideDepth,.135,.024,leftX,h*.135,0,buttonMat);
- addSideSlot(phone,"left",sideDepth,.135,.024,leftX,-h*.015,0,buttonMat);
- // Bottom port and speaker/microphone perforations.
- const portMat=mats("#11141b",.3,.2);
- const gen=Number((state.model.match(/iPhone (\d+)/)||[])[1]||0);
- const usbC=gen>=15 || state.model==="My concept phone";
- addSlot(phone,usbC?w*.205:w*.17,.028,.012,0,-h/2-.003,d*.02,portMat);
- for(let i=0;i<5;i++){
-   const xx=-w*.32+i*w*.065;
-   addDisc(phone,w*.010,.012,xx,-h/2-.002,d*.02,portMat,12);
-   addDisc(phone,w*.010,.012,-xx,-h/2-.002,d*.02,portMat,12);
- }
- addCameraIsland(phone,cfg,w,h,d,finishMetal?"#b7bac4":state.color);
- // Small Apple-like silhouette on the rear glass, oriented toward the back-view camera.
- const logoMat=mats(finishMetal?"#e1e2e8":state.colorName==="Midnight"?"#34363d":"#a9abb2",.42,.18);
- const lr=w*.061, logoShape=new THREE.Shape();
- logoShape.moveTo(0,-lr*.9);
- logoShape.bezierCurveTo(-lr*.43,-lr*.88,-lr*.83,-lr*.5,-lr*.78,-lr*.08);
- logoShape.bezierCurveTo(-lr*.74,lr*.42,-lr*.38,lr*.72,-lr*.08,lr*.55);
- logoShape.bezierCurveTo(lr*.12,lr*.68,lr*.47,lr*.65,lr*.64,lr*.34);
- logoShape.bezierCurveTo(lr*.77,lr*.11,lr*.57,-lr*.02,lr*.47,lr*.12);
- logoShape.bezierCurveTo(lr*.34,lr*.3,lr*.45,lr*.49,lr*.61,lr*.5);
- logoShape.bezierCurveTo(lr*.43,lr*.8,lr*.18,lr*.86,0,lr*.64);
- logoShape.bezierCurveTo(-lr*.2,lr*.84,-lr*.48,lr*.74,-lr*.61,lr*.5);
- logoShape.bezierCurveTo(-lr*.79,lr*.25,-lr*.78,-lr*.4,0,-lr*.9);
- logoShape.closePath();
- const logo=new THREE.Mesh(new THREE.ShapeGeometry(logoShape),logoMat);
- logo.position.set(0,-h*.08,-d/2-.014);logo.rotation.y=Math.PI;phone.add(logo);
- const leafShape=new THREE.Shape();leafShape.moveTo(lr*.06,lr*.68);leafShape.quadraticCurveTo(lr*.1,lr*1.03,lr*.43,lr*.94);leafShape.quadraticCurveTo(lr*.4,lr*.69,lr*.06,lr*.68);
- const leaf=new THREE.Mesh(new THREE.ShapeGeometry(leafShape),logoMat);leaf.position.set(0,-h*.08,-d/2-.014);leaf.rotation.y=Math.PI;phone.add(leaf);
- caseMesh=addBox(phone,w+.035,h+.035,d+.03,0,0,0,new THREE.MeshPhysicalMaterial({color:"#d8d5e8",roughness:.17,metalness:0,transparent:true,opacity:.16,clearcoat:1,clearcoatRoughness:.1}),cfg.corner+.018);
- caseMesh.visible=state.clearCase;
- stickerMesh=new THREE.Group();const starShape=new THREE.Shape();
- for(let i=0;i<10;i++){const a=i*Math.PI/5-Math.PI/2,r=i%2===0?w*.078:w*.036,x=Math.cos(a)*r,y=Math.sin(a)*r;i===0?starShape.moveTo(x,y):starShape.lineTo(x,y);}
- starShape.closePath();const star=new THREE.Mesh(new THREE.ShapeGeometry(starShape),mats("#ffb7d3",.4));
- star.position.set(w*.25,-h*.24,-d/2-.018);stickerMesh.add(star);phone.add(stickerMesh);stickerMesh.visible=state.sticker;
- phone.rotation.set(-.08,state.view==="front"?0:Math.PI,0);
- updateLabels();
-}
-function init(){
- scene=new THREE.Scene();scene.background=new THREE.Color("#f8f5ff");
- camera=new THREE.PerspectiveCamera(36,1,.1,100);camera.position.set(0,.08,6.1);
- renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;wrap.prepend(renderer.domElement);
- scene.add(new THREE.HemisphereLight("#fff8ff","#b4a4dc",2));
- const key=new THREE.DirectionalLight("#fff3e7",3.1);key.position.set(3,4,5);scene.add(key);const rim=new THREE.DirectionalLight("#a78bfa",2.5);rim.position.set(-4,1,-3);scene.add(rim);
- const floor=new THREE.Mesh(new THREE.CircleGeometry(2.5,64),new THREE.MeshBasicMaterial({color:"#eee6ff",transparent:true,opacity:.6}));floor.rotation.x=-Math.PI/2;floor.position.y=-1.35;scene.add(floor);
- buildPhone();resize();window.addEventListener("resize",resize);
- renderer.domElement.addEventListener("pointerdown",e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId);});
- renderer.domElement.addEventListener("pointermove",e=>{if(!dragging)return;phone.rotation.y+=(e.clientX-lastX)*.012;phone.rotation.x+=(e.clientY-lastY)*.009;phone.rotation.x=Math.max(-1.1,Math.min(1.1,phone.rotation.x));lastX=e.clientX;lastY=e.clientY;});
- renderer.domElement.addEventListener("pointerup",()=>dragging=false);renderer.domElement.addEventListener("pointercancel",()=>dragging=false);
- renderer.domElement.addEventListener("wheel",e=>{camera.position.z=Math.max(4,Math.min(8,camera.position.z+e.deltaY*.003));},{passive:true});
- $("loadingLabel").hidden=true;animate();
-}
-function resize(){if(!renderer)return;const w=wrap.clientWidth,h=wrap.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
-function animate(){requestAnimationFrame(animate);renderer.render(scene,camera);}
-function updateLabels(){const cfg=models[state.model]||models["iPhone 17 Pro"];$("previewTitle").textContent=state.model;$("previewSubtitle").textContent=cfg.mm[0].toFixed(1)+" × "+cfg.mm[1].toFixed(1)+" × "+cfg.mm[2].toFixed(2)+" mm · "+state.colorName+" · "+state.finish[0].toUpperCase()+state.finish.slice(1);const ref=$("specReference");if(ref){const slug=appleModelSlugs[state.model];ref.href=slug?"https://www.apple.com/ae/iphone/compare/?modelList="+encodeURIComponent(slug):"https://www.apple.com/ae/iphone/compare/";ref.textContent=slug?"Official Apple specs & comparison ↗":"Browse official Apple specifications ↗";} $("finishName").textContent=state.colorName;$("finishDot").style.background=state.color;}
-function applyColor(hex,name){state.color=hex;state.colorName=name||"Custom color";buildPhone();document.querySelectorAll(".swatch").forEach(b=>b.classList.toggle("active",b.dataset.color.toLowerCase()===hex.toLowerCase()));$("customColor").value=hex;updateLabels();}
-function snapshot(){return {...state,name:$("designName").value.trim()||"My dream iPhone"}}
-function showToast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),2200);}
-function getSaved(){try{return JSON.parse(localStorage.getItem("phonelab-designs")||"[]")}catch{return []}}
-function renderSaved(){const list=getSaved();$("savedCount").textContent=list.length;const root=$("savedDesigns");root.innerHTML="";if(!list.length){root.innerHTML='<div class="empty"><span>✧</span><strong>Your gallery is waiting</strong><p>Save a design to start your personal collection.</p></div>';return}list.forEach((d,i)=>{const card=document.createElement("article");card.className="saved-card";card.innerHTML='<div class="saved-thumb">📱</div><strong></strong><small></small><button type="button">Load this design</button><button type="button">Delete</button>';card.querySelector("strong").textContent=d.name;card.querySelector("small").textContent=d.model+" · "+d.colorName;card.querySelector(".saved-thumb").style.background="radial-gradient(circle,"+d.color+"80,#faf8ff)";card.querySelectorAll("button")[0].onclick=()=>loadDesign(d);card.querySelectorAll("button")[1].onclick=()=>{const arr=getSaved();arr.splice(i,1);localStorage.setItem("phonelab-designs",JSON.stringify(arr));renderSaved()};root.append(card)})}
-function saveDesign(){const d=snapshot(),list=getSaved();list.unshift(d);localStorage.setItem("phonelab-designs",JSON.stringify(list.slice(0,30)));renderSaved();showToast("Design saved to your collection!")}
-function loadDesign(d){Object.assign(state,d);$("modelSelect").value=state.model;$("designName").value=state.name;$("caseToggle").checked=state.clearCase;$("stickerToggle").checked=state.sticker;document.querySelectorAll(".segment").forEach(b=>b.classList.toggle("active",b.dataset.finish===state.finish));applyColor(state.color,state.colorName);showToast("Design loaded!")}
-$("modelSelect").addEventListener("change",e=>{state.model=e.target.value;buildPhone()});
-document.querySelectorAll(".swatch").forEach(b=>b.addEventListener("click",()=>applyColor(b.dataset.color,b.dataset.name)));
-$("customColor").addEventListener("input",e=>applyColor(e.target.value,"Custom color"));
-document.querySelectorAll(".segment").forEach(b=>b.addEventListener("click",()=>{state.finish=b.dataset.finish;document.querySelectorAll(".segment").forEach(x=>x.classList.toggle("active",x===b));buildPhone()}));
-$("caseToggle").addEventListener("change",e=>{state.clearCase=e.target.checked;buildPhone()});$("stickerToggle").addEventListener("change",e=>{state.sticker=e.target.checked;buildPhone()});
-$("frontView").onclick=()=>{state.view="front";phone.rotation.y=0;document.querySelectorAll(".view-buttons button").forEach(b=>b.classList.remove("active"));$("frontView").classList.add("active")};
-$("backView").onclick=()=>{state.view="back";phone.rotation.y=Math.PI;document.querySelectorAll(".view-buttons button").forEach(b=>b.classList.remove("active"));$("backView").classList.add("active")};
-$("resetView").onclick=()=>{phone.rotation.set(-.08,state.view==="front"?0:Math.PI,0);camera.position.z=6.1};
-$("saveDesign").onclick=saveDesign;$("saveTop").onclick=saveDesign;$("clearSaved").onclick=()=>{if(confirm("Clear all saved designs from this browser?")){localStorage.removeItem("phonelab-designs");renderSaved()}};
-$("resetDesign").onclick=()=>{Object.assign(state,{model:"iPhone 17 Pro",color:"#f4f0e9",colorName:"Starlight",finish:"matte",clearCase:false,sticker:false,name:"My dream iPhone",view:"front"});$("modelSelect").value=state.model;$("designName").value=state.name;$("caseToggle").checked=false;$("stickerToggle").checked=false;document.querySelectorAll(".segment").forEach(b=>b.classList.toggle("active",b.dataset.finish==="matte"));applyColor(state.color,state.colorName);$("frontView").click();showToast("Design reset")};
-$("downloadImage").onclick=()=>{renderer.render(scene,camera);const a=document.createElement("a");a.download=(snapshot().name||"phone-design").toLowerCase().replace(/[^a-z0-9]+/g,"-")+".png";a.href=renderer.domElement.toDataURL("image/png");a.click();showToast("Image exported!")};
-renderSaved();try{init()}catch(err){$("loadingLabel").hidden=false;$("loadingLabel").textContent="3D preview couldn't start. Try a browser with WebGL enabled.";console.error(err)}
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const svgNS = "http://www.w3.org/2000/svg";
+  const canvas = $("designCanvas");
+  const state = { view: "rear", grid: true, selected: null, nextId: 1, items: [], saved: [] };
+  const defaults = {
+    body: { name: "Phone body", x: 115, y: 85, w: 190, h: 410, color: "#d9dde5", radius: 31, layer: 0 },
+    screen: { name: "Display", x: 127, y: 98, w: 166, h: 384, color: "#252b38", radius: 25, layer: 1 },
+    camera: { name: "Camera module", x: 132, y: 112, w: 76, h: 94, color: "#343a47", radius: 18, layer: 2 },
+    lens: { name: "Camera lens", x: 145, y: 124, w: 25, h: 25, color: "#111827", radius: 13, layer: 3 },
+    flash: { name: "Flash", x: 181, y: 131, w: 13, h: 13, color: "#f4dca2", radius: 7, layer: 4 },
+    logo: { name: "Nova logo", x: 191, y: 280, w: 44, h: 44, color: "#657084", radius: 22, layer: 5 },
+    button: { name: "Side button", x: 302, y: 205, w: 8, h: 58, color: "#9da5b2", radius: 4, layer: 6 },
+    detail: { name: "Custom detail", x: 220, y: 350, w: 40, h: 24, color: "#91a8c7", radius: 8, layer: 7 }
+  };
+  const initial = ["body", "camera", "lens", "lens", "flash", "logo", "button"];
+  let toastTimer;
+  function toast(message) {
+    const el = $("toast"); el.textContent = message; el.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
+  }
+  function makeItem(type, overrides = {}) {
+    const d = defaults[type] || defaults.detail;
+    const item = { id: state.nextId++, type, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h, color: d.color, radius: d.radius || 0, rotation: 0, layer: state.items.length, ...overrides };
+    if (type === "lens" && state.items.some(i => i.type === "lens")) {
+      const count = state.items.filter(i => i.type === "lens").length;
+      item.x = d.x + (count % 2) * 31; item.y = d.y + Math.floor(count / 2) * 31;
+    }
+    return item;
+  }
+  function addItem(type) {
+    const item = makeItem(type);
+    state.items.push(item); selectItem(item.id); render(); toast(item.name + " added");
+  }
+  function selectedItem() { return state.items.find(i => i.id === state.selected); }
+  function el(tag, attrs = {}) {
+    const node = document.createElementNS(svgNS, tag);
+    Object.entries(attrs).forEach(([k,v]) => node.setAttribute(k, String(v)));
+    return node;
+  }
+  function shapeFor(item) {
+    const group = el("g", { "data-id": item.id, transform: `rotate(${item.rotation} ${item.x + item.w/2} ${item.y + item.h/2})`, cursor: "move" });
+    let shape;
+    if (item.type === "logo") {
+      shape = el("text", { x: item.x + item.w/2, y: item.y + item.h*.72, "text-anchor":"middle", "font-family":"Space Grotesk, sans-serif", "font-size":Math.max(12,item.w*.65), "font-weight":"700", fill:item.color });
+      shape.textContent = "N";
+    } else if (item.type === "lens") {
+      shape = el("g");
+      shape.appendChild(el("circle", {cx:item.x+item.w/2,cy:item.y+item.h/2,r:Math.min(item.w,item.h)*.49,fill:item.color,stroke:"#8792a5","stroke-width":2}));
+      shape.appendChild(el("circle", {cx:item.x+item.w/2,cy:item.y+item.h/2,r:Math.min(item.w,item.h)*.29,fill:"#263c5a",stroke:"#617da5","stroke-width":2}));
+      shape.appendChild(el("circle", {cx:item.x+item.w*.39,cy:item.y+item.h*.35,r:Math.min(item.w,item.h)*.09,fill:"#dbeafe","fill-opacity":.8}));
+    } else if (item.type === "flash") {
+      shape = el("circle", {cx:item.x+item.w/2,cy:item.y+item.h/2,r:Math.min(item.w,item.h)/2,fill:item.color,stroke:"#b6bbc5","stroke-width":1.5});
+    } else {
+      const radius = item.type === "body" ? Math.min(item.w,item.h)*.16 : Math.min(item.radius || 8,item.w/2,item.h/2);
+      shape = el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:radius,fill:item.color,stroke:item.type==="body"?"#9ca5b4":"#ffffff55","stroke-width":item.type==="body"?2:1});
+      if (item.type === "screen") {
+        shape.setAttribute("stroke","#111827");
+      }
+      if (item.type === "camera") {
+        shape.setAttribute("stroke","#555e6e"); shape.setAttribute("stroke-width","1.5");
+      }
+    }
+    group.appendChild(shape);
+    if (item.type === "body") {
+      group.appendChild(el("rect",{x:item.x+item.w*.42,y:item.y+item.h-13,width:item.w*.16,height:3,rx:2,fill:"#737d8d","fill-opacity":.55}));
+    }
+    if (state.selected === item.id) {
+      const box = el("rect",{x:item.x-3,y:item.y-3,width:item.w+6,height:item.h+6,rx:Math.min(item.radius||5,12),fill:"none",stroke:"#355fe8","stroke-width":1.5,"stroke-dasharray":"5 4","pointer-events":"none"});
+      group.appendChild(box);
+      group.appendChild(el("circle",{cx:item.x+item.w+3,cy:item.y+item.h+3,r:6,fill:"#355fe8",stroke:"#fff","stroke-width":2,"data-resize":item.id,cursor:"nwse-resize"}));
+    }
+    group.addEventListener("pointerdown", ev => startPointer(ev,item.id, ev.target.hasAttribute("data-resize")));
+    return group;
+  }
+  function render() {
+    canvas.querySelectorAll("[data-id]").forEach(n => n.remove());
+    const sorted = [...state.items].sort((a,b) => a.layer-b.layer);
+    sorted.forEach(item => canvas.appendChild(shapeFor(item)));
+    updateProperties();
+    $("selectionLabel").textContent = selectedItem() ? selectedItem().name + " selected" : "No component selected";
+    $("canvasTitle").textContent = "Horizon · " + (state.view === "rear" ? "Rear design" : "Front design");
+  }
+  function selectItem(id) { state.selected = id; updateProperties(); }
+  function updateProperties() {
+    const item = selectedItem();
+    $("emptyProperties").hidden = !!item;
+    $("propertyControls").hidden = !item;
+    if (!item) { $("selectionLabel").textContent = "No component selected"; return; }
+    $("selectionLabel").textContent = item.name + " selected";
+    $("componentName").value = item.name;
+    $("componentColor").value = validHex(item.color) ? item.color : "#d9dde5";
+    $("hexColor").value = item.color.toUpperCase();
+    $("posX").value = Math.round(item.x); $("posY").value = Math.round(item.y);
+    $("sizeW").value = Math.round(item.w); $("sizeH").value = Math.round(item.h);
+    $("rotation").value = item.rotation; $("rotationValue").value = item.rotation + "°";
+  }
+  function validHex(value) { return /^#[0-9a-f]{6}$/i.test(value); }
+  function setColor(value) {
+    const item = selectedItem(); if (!item || !validHex(value)) return;
+    item.color = value; $("componentColor").value = value; $("hexColor").value = value.toUpperCase(); render();
+  }
+  let pointer = null;
+  function startPointer(ev, id, resizing) {
+    ev.preventDefault(); ev.stopPropagation();
+    const item = state.items.find(i => i.id === id); if (!item) return;
+    state.selected = id; updateProperties(); render();
+    pointer = { id, startX: ev.clientX, startY: ev.clientY, x:item.x, y:item.y, w:item.w, h:item.h, resizing, scaleX:420/canvas.getBoundingClientRect().width, scaleY:620/canvas.getBoundingClientRect().height };
+    window.addEventListener("pointermove", movePointer);
+    window.addEventListener("pointerup", stopPointer, {once:true});
+  }
+  function movePointer(ev) {
+    if (!pointer) return;
+    const item = state.items.find(i => i.id === pointer.id); if (!item) return;
+    const dx = (ev.clientX-pointer.startX)*pointer.scaleX, dy = (ev.clientY-pointer.startY)*pointer.scaleY;
+    if (pointer.resizing) { item.w = Math.max(8,Math.min(400,pointer.w+dx)); item.h = Math.max(8,Math.min(600,pointer.h+dy)); }
+    else { item.x = Math.max(0,Math.min(420-item.w,pointer.x+dx)); item.y = Math.max(0,Math.min(620-item.h,pointer.y+dy)); }
+    render();
+  }
+  function stopPointer() { pointer = null; window.removeEventListener("pointermove", movePointer); }
+  function reorder(id, direction) {
+    const item = selectedItem(); if (!item) return;
+    const layers = state.items.map(i=>i.layer);
+    item.layer = direction === "front" ? Math.max(...layers)+1 : Math.min(...layers)-1;
+    render();
+  }
+  function serialize() { return {name:"Horizon",view:state.view,items:state.items.map(i=>({...i}))}; }
+  function loadDesign(data) {
+    state.items = (data.items || []).map(i=>({...i}));
+    state.nextId = Math.max(0,...state.items.map(i=>i.id))+1; state.view=data.view||"rear"; state.selected=null;
+    $("rearViewBtn").classList.toggle("active",state.view==="rear"); $("frontViewBtn").classList.toggle("active",state.view==="front"); render();
+  }
+  function loadSaved() {
+    try { state.saved = JSON.parse(localStorage.getItem("nova-horizon-designs") || "[]"); } catch { state.saved=[]; }
+    renderSaved();
+  }
+  function renderSaved() {
+    $("savedCount").textContent = state.saved.length;
+    const root = $("savedDesigns"); root.replaceChildren();
+    if (!state.saved.length) { const empty=document.createElement("div"); empty.className="saved-empty"; empty.textContent="Your saved Horizon concepts will appear here."; root.appendChild(empty); return; }
+    state.saved.forEach((d,index)=>{
+      const card=document.createElement("div"); card.className="saved-card";
+      const thumb=document.createElement("div"); thumb.className="saved-thumb";
+      const body=d.items.find(i=>i.type==="body"); if(body) thumb.style.background=body.color;
+      const info=document.createElement("div"); info.className="saved-card-info";
+      const name=document.createElement("b"); name.textContent=d.title || "Horizon concept";
+      const sub=document.createElement("small"); sub.textContent=d.items.length+" components";
+      info.append(name,sub);
+      const load=document.createElement("button"); load.textContent="Open"; load.addEventListener("click",()=>{loadDesign(d);toast("Design opened");window.scrollTo({top:0,behavior:"smooth"});});
+      const remove=document.createElement("button"); remove.textContent="×"; remove.setAttribute("aria-label","Delete saved design"); remove.addEventListener("click",()=>{state.saved.splice(index,1);persistSaved();renderSaved();});
+      card.append(thumb,info,load,remove); root.appendChild(card);
+    });
+  }
+  function persistSaved() { localStorage.setItem("nova-horizon-designs",JSON.stringify(state.saved)); renderSaved(); }
+  function saveDesign() {
+    const data=serialize(); data.title=prompt("Name this Horizon concept:", "Horizon concept "+(state.saved.length+1));
+    if (data.title === null) return;
+    data.title=data.title.trim() || "Horizon concept";
+    state.saved.unshift(data); state.saved=state.saved.slice(0,30); persistSaved(); toast("Horizon concept saved on this device");
+  }
+  function reset() {
+    state.items=[]; state.nextId=1; initial.forEach(type=>state.items.push(makeItem(type)));
+    // Make the second lens sit beside the first and use a simple, balanced camera layout.
+    const lenses=state.items.filter(i=>i.type==="lens"); if(lenses[1]) {lenses[1].x=174;lenses[1].y=124;}
+    state.items.forEach((item,index)=>item.layer=index);
+    state.view="rear";state.selected=null;$("rearViewBtn").classList.add("active");$("frontViewBtn").classList.remove("active");$("canvasGrid").classList.remove("hidden");state.grid=true;$("gridBtn").classList.add("active");render();
+  }
+  function switchView(view) {
+    state.view=view;
+    if(view==="front") {
+      const body=state.items.find(i=>i.type==="body");
+      if(body) { body.color="#cbd2dd"; }
+      let screen=state.items.find(i=>i.type==="screen");
+      if(!screen) { screen=makeItem("screen",{x:127,y:98,w:166,h:384,color:"#202633",layer:state.items.length});state.items.push(screen); }
+      state.items.filter(i=>["camera","lens","flash","logo"].includes(i.type)).forEach(i=>i.color=i.type==="logo"?"#5b6473":"#202633");
+    }
+    $("rearViewBtn").classList.toggle("active",view==="rear"); $("frontViewBtn").classList.toggle("active",view==="front"); render();
+  }
+  $("componentList").addEventListener("click",ev=>{const btn=ev.target.closest("[data-add]");if(btn)addItem(btn.dataset.add);});
+  $("componentName").addEventListener("input",ev=>{const i=selectedItem();if(i){i.name=ev.target.value||"Component";$("selectionLabel").textContent=i.name+" selected";}});
+  $("componentColor").addEventListener("input",ev=>setColor(ev.target.value));
+  $("hexColor").addEventListener("change",ev=>{let v=ev.target.value.trim();if(!v.startsWith("#"))v="#"+v;if(validHex(v))setColor(v);else updateProperties();});
+  $("presetColors").addEventListener("click",ev=>{const b=ev.target.closest("[data-color]");if(b)setColor(b.dataset.color);});
+  $("posX").addEventListener("change",ev=>{const i=selectedItem();if(i){i.x=Math.max(0,Math.min(420-i.w,Number(ev.target.value)||0));render();}});
+  $("posY").addEventListener("change",ev=>{const i=selectedItem();if(i){i.y=Math.max(0,Math.min(620-i.h,Number(ev.target.value)||0));render();}});
+  $("sizeW").addEventListener("change",ev=>{const i=selectedItem();if(i){i.w=Math.max(8,Math.min(420,Number(ev.target.value)||8));render();}});
+  $("sizeH").addEventListener("change",ev=>{const i=selectedItem();if(i){i.h=Math.max(8,Math.min(620,Number(ev.target.value)||8));render();}});
+  $("rotation").addEventListener("input",ev=>{const i=selectedItem();if(i){i.rotation=Number(ev.target.value);$("rotationValue").value=i.rotation+"°";render();}});
+  $("duplicateBtn").addEventListener("click",()=>{const i=selectedItem();if(!i){toast("Select a component first");return;}const copy={...i,id:state.nextId++,name:i.name+" copy",x:Math.min(420-i.w,i.x+18),y:Math.min(620-i.h,i.y+18),layer:Math.max(...state.items.map(n=>n.layer))+1};state.items.push(copy);selectItem(copy.id);render();toast("Component duplicated");});
+  $("deleteBtn").addEventListener("click",()=>{if(!state.selected){toast("Select a component first");return;}state.items=state.items.filter(i=>i.id!==state.selected);state.selected=null;render();toast("Component removed");});
+  $("bringFrontBtn").addEventListener("click",()=>reorder(state.selected,"front"));
+  $("sendBackBtn").addEventListener("click",()=>reorder(state.selected,"back"));
+  $("rearViewBtn").addEventListener("click",()=>switchView("rear"));
+  $("frontViewBtn").addEventListener("click",()=>switchView("front"));
+  $("gridBtn").addEventListener("click",()=>{state.grid=!state.grid;$("canvasGrid").classList.toggle("hidden",!state.grid);$("gridBtn").classList.toggle("active",state.grid);$("gridBtn").setAttribute("aria-pressed",String(state.grid));});
+  $("saveBtn").addEventListener("click",saveDesign);
+  $("resetBtn").addEventListener("click",()=>{if(confirm("Reset the current Horizon design?")){reset();toast("Canvas reset");}});
+  $("clearSavedBtn").addEventListener("click",()=>{if(!state.saved.length)return;if(confirm("Delete all saved concepts from this browser?")){state.saved=[];persistSaved();toast("Saved concepts cleared");}});
+  $("exportBtn").addEventListener("click",()=>{
+    const clone=canvas.cloneNode(true); clone.setAttribute("xmlns",svgNS); clone.setAttribute("width","840"); clone.setAttribute("height","1240");
+    const xml=new XMLSerializer().serializeToString(clone); const blob=new Blob([xml],{type:"image/svg+xml;charset=utf-8"}); const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=url;a.download="nova-horizon-design.svg";a.click();URL.revokeObjectURL(url);toast("SVG design exported");
+  });
+  reset(); loadSaved();
+})();
