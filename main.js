@@ -275,7 +275,7 @@
     await loadSaved();
   });
   $("resetBtn").addEventListener("click",()=>{if(confirm("Reset the current Horizon design?")){reset();toast("Canvas reset");}});
-  $("clearSavedBtn").addEventListener("click",()=>{if(!state.saved.length)return;if(confirm("Delete all saved concepts from this browser?")){state.saved=[];persistSaved();toast("Saved concepts cleared");}});
+  $("clearSavedBtn").addEventListener("click",async()=>{if(!state.saved.length)return;if(confirm(state.user?"Delete all saved concepts from your account?":"Delete all saved concepts from this browser?")){if(state.user){const {error}=await supabase.from("designs").delete().eq("user_id",state.user.id);if(error){toast("Could not clear cloud designs");return;}}state.saved=[];persistSaved();toast("Saved concepts cleared");}});
   $("exportBtn").addEventListener("click",()=>{
     const clone=canvas.cloneNode(true); clone.setAttribute("xmlns",svgNS); clone.setAttribute("width","840"); clone.setAttribute("height","1240");
     const xml=new XMLSerializer().serializeToString(clone); const blob=new Blob([xml],{type:"image/svg+xml;charset=utf-8"}); const url=URL.createObjectURL(blob);
