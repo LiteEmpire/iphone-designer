@@ -119,7 +119,17 @@
     if (state.selected === item.id) {
       const box = el("rect",{x:item.x-3,y:item.y-3,width:item.w+6,height:item.h+6,rx:Math.min(item.radius||5,12),fill:"none",stroke:"#355fe8","stroke-width":1.5,"stroke-dasharray":"5 4","pointer-events":"none"});
       group.appendChild(box);
-      group.appendChild(el("circle",{cx:item.x+item.w+3,cy:item.y+item.h+3,r:6,fill:"#355fe8",stroke:"#fff","stroke-width":2,"data-resize":item.id,cursor:"nwse-resize"}));
+      // Four directional resize handles: drag an edge to resize along that axis.
+      const handles = [
+        { dir: "up", x: item.x + item.w/2, y: item.y, d: `M ${item.x+item.w/2} ${item.y-9} v 7 M ${item.x+item.w/2-3} ${item.y-5} l 3 3 3 -3`, cursor: "ns-resize" },
+        { dir: "down", x: item.x + item.w/2, y: item.y + item.h, d: `M ${item.x+item.w/2} ${item.y+item.h+9} v -7 M ${item.x+item.w/2-3} ${item.y+item.h+5} l 3 -3 3 3`, cursor: "ns-resize" },
+        { dir: "left", x: item.x, y: item.y + item.h/2, d: `M ${item.x-9} ${item.y+item.h/2} h 7 M ${item.x-5} ${item.y+item.h/2-3} l -3 3 3 3`, cursor: "ew-resize" },
+        { dir: "right", x: item.x + item.w, y: item.y + item.h/2, d: `M ${item.x+item.w+9} ${item.y+item.h/2} h -7 M ${item.x+item.w+5} ${item.y+item.h/2-3} l 3 3 -3 3`, cursor: "ew-resize" }
+      ];
+      handles.forEach(handle => {
+        group.appendChild(el("circle", { cx: handle.x, cy: handle.y, r: 7, fill: "#355fe8", stroke: "#fff", "stroke-width": 1.8, "data-resize": item.id, "data-resize-direction": handle.dir, cursor: handle.cursor }));
+        group.appendChild(el("path", { d: handle.d, fill: "none", stroke: "#355fe8", "stroke-width": 1.8, "stroke-linecap": "round", "stroke-linejoin": "round", "pointer-events": "none" }));
+      });
     }
     group.addEventListener("pointerdown", ev => startPointer(ev,item.id, ev.target.hasAttribute("data-resize")));
     return group;
@@ -182,7 +192,7 @@
     state.selected = id;
     render();
     const point = canvasPoint(ev);
-    pointer = { id, startX: point.x, startY: point.y, x:item.x, y:item.y, w:item.w, h:item.h, resizing };
+    pointer = { id, startX: point.x, startY: point.y, x:item.x, y:item.y, w:item.w, h:item.h, resizing, resizeDirection: ev.target.getAttribute("data-resize-direction") || "down-right" };
     window.addEventListener("pointermove", movePointer);
     window.addEventListener("pointerup", stopPointer, { once:true });
     window.addEventListener("pointercancel", stopPointer, { once:true });
@@ -196,8 +206,24 @@
     // In the front view, horizontal dragging of the mirrored side button is reversed.
     const moveX = realItem && realItem.type === "button" && state.view === "front" ? -dx : dx;
     if (pointer.resizing) {
-      item.w = Math.max(8,Math.min(420-item.x,pointer.w+dx));
-      item.h = Math.max(8,Math.min(620-item.y,pointer.h+dy));
+      const dir = pointer.resizeDirection;
+      const minSize = 8;
+      if (dir === "left") {
+        const right = pointer.x + pointer.w;
+        item.x = Math.max(0, Math.min(right - minSize, pointer.x + dx));
+        item.w = right - item.x;
+      } else if (dir === "right") {
+        item.w = Math.max(minSize, Math.min(420 - pointer.x, pointer.w + dx));
+      } else if (dir === "up") {
+        const bottom = pointer.y + pointer.h;
+        item.y = Math.max(0, Math.min(bottom - minSize, pointer.y + dy));
+        item.h = bottom - item.y;
+      } else if (dir === "down") {
+        item.h = Math.max(minSize, Math.min(620 - pointer.y, pointer.h + dy));
+      } else {
+        item.w = Math.max(minSize, Math.min(420 - item.x, pointer.w + dx));
+        item.h = Math.max(minSize, Math.min(620 - item.y, pointer.h + dy));
+      }
     } else {
       item.x = Math.max(0,Math.min(420-item.w,pointer.x+moveX));
       item.y = Math.max(0,Math.min(620-item.h,pointer.y+dy));
