@@ -73,26 +73,13 @@
         `M ${x+91} ${y+20} h 105 a 7 7 0 0 1 7 7 v 175 a 7 7 0 0 1 -7 7 h -105 a 7 7 0 0 1 -7 -7 v -175 a 7 7 0 0 1 7 -7 Z`,
         // Battery cavity.
         `M ${x+28} ${y+145} h 50 a 8 8 0 0 1 8 8 v 142 a 8 8 0 0 1 -8 8 h -50 a 8 8 0 0 1 -8 -8 v -142 a 8 8 0 0 1 8 -8 Z`,
-        // USB-C port opening and screw/mounting holes.
-        `M ${x+w/2-17} ${y+h-9} h 34 a 4 4 0 0 1 4 4 v 8 h -42 v -8 a 4 4 0 0 1 4 -4 Z`
+        // Chassis openings are reserved only for the motherboard and battery.
       ].join(" ");
       const outer = `M ${x+22} ${y} H ${x+w-22} Q ${x+w} ${y} ${x+w} ${y+22} V ${y+h-22} Q ${x+w} ${y+h} ${x+w-22} ${y+h} H ${x+22} Q ${x} ${y+h} ${x} ${y+h-22} V ${y+22} Q ${x} ${y} ${x+22} ${y} Z`;
       shape.appendChild(el("path", {d:outer+" "+holes,fill:item.color,stroke:"#d8dee8","stroke-width":3,"fill-rule":"evenodd","fill-opacity":0.96}));
       // Reinforcing ribs and screw bosses around the component cavities.
       [[x+10,y+105],[x+w-10,y+105],[x+10,y+285],[x+w-10,y+285],[x+18,y+h-25],[x+w-18,y+h-25]].forEach(([cx,cy])=>{
         shape.appendChild(el("circle",{cx,cy,r:4,fill:"#4b5565",stroke:"#e2e8f0","stroke-width":1.3}));
-      });
-      // Bay labels sit on the chassis rails OUTSIDE the cutouts, so installed
-      // components cannot cover them. Each label has a dark plaque for contrast.
-      const portLabels = [
-        {text:"MOTHERBOARD BAY", x:x+146, y:y+15, width:88},
-        {text:"BATTERY BAY", x:x+53, y:y+138, width:68},
-        {text:"USB-C PORT", x:x+w/2, y:y+h-12, width:64}
-      ];
-      portLabels.forEach(label => {
-        shape.appendChild(el("rect",{x:label.x-label.width/2,y:label.y-8,width:label.width,height:12,rx:3,fill:"#273244",stroke:"#d8dee8","stroke-width":0.7,"pointer-events":"none"}));
-        const t=el("text",{x:label.x,y:label.y,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":7.5,"font-weight":"700",fill:"#ffffff","pointer-events":"none"});
-        t.textContent=label.text; shape.appendChild(t);
       });
       // Small rail details make the frame look machined rather than like a plain plate.
       shape.appendChild(el("path",{d:`M ${x+83} ${y+22} v 100 M ${x+83} ${y+140} v 150`,fill:"none",stroke:"#d8dee8","stroke-width":2,"stroke-linecap":"round"}));
