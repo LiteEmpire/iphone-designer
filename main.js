@@ -40,6 +40,10 @@
     const el = $("toast"); el.textContent = message; el.classList.add("show");
     clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
   }
+  const INNER_TYPES = ["cpu","gpu","ram","ssd"];
+  const FIXED_TYPES = ["nc","battery","cpu","gpu","ram","ssd"];
+  const PHONE_BOUNDS = { x:115, y:85, w:190, h:410 };
+  function clampToPhone(item) { if (!item || item.type === "body" || item.type === "button") return; item.x=Math.max(PHONE_BOUNDS.x,Math.min(PHONE_BOUNDS.x+PHONE_BOUNDS.w-item.w,item.x)); item.y=Math.max(PHONE_BOUNDS.y,Math.min(PHONE_BOUNDS.y+PHONE_BOUNDS.h-item.h,item.y)); }
   function makeItem(type, overrides = {}) {
     const d = defaults[type] || defaults.detail;
     const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" || type === "frontCamera" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : ["nc", "battery", "motherboard", "cpu", "gpu", "ram", "ssd"].includes(type) ? "inside" : state.view;
@@ -49,6 +53,7 @@
       const count = state.items.filter(i => i.type === "lens").length;
       item.x = d.x + (count % 2) * 31; item.y = d.y + Math.floor(count / 2) * 31;
     }
+    clampToPhone(item);
     return item;
   }
   function addItem(type) {
@@ -266,17 +271,17 @@
     $("componentColor").value = validHex(item.color) ? item.color : "#d9dde5";
     $("hexColor").value = item.color.toUpperCase();
     $("componentMaterial").value = item.material || "default";
-    $("posX").value = Math.round(item.x); $("posY").value = Math.round(item.y);
-    const fixedSize = ["nc","battery","motherboard","cpu","gpu","ram","ssd"].includes(item.type);
+    $("posX").value = Math.round(item.x); $("posY").value = Math.round(item.y); $("posX").disabled=fixedPosition; $("posY").disabled=fixedPosition;
+    const fixedSize = FIXED_TYPES.includes(item.type) || item.type==="motherboard"; const fixedPosition = FIXED_TYPES.includes(item.type) || item.type==="motherboard";
     $("sizeW").value = Math.round(item.w); $("sizeH").value = Math.round(item.h);
     $("sizeW").disabled = fixedSize; $("sizeH").disabled = fixedSize;
     $("sizeW").title = fixedSize ? "Internal components have fixed sizes" : "";
     $("sizeH").title = fixedSize ? "Internal components have fixed sizes" : "";
-    $("rotation").value = item.rotation; $("rotationValue").value = item.rotation + "°";
+    $("rotation").value = item.rotation; $("rotationValue").value = item.rotation + "°"; $("rotation").disabled=FIXED_TYPES.includes(item.type)||item.type==="motherboard";
   }
   function validHex(value) { return /^#[0-9a-f]{6}$/i.test(value); }
   function setColor(value) {
-    const item = selectedItem(); if (!item || !validHex(value)) return;
+    const item = selectedItem(); if (!item || FIXED_TYPES.includes(item.type) || item.type==="motherboard" || !validHex(value)) return;
     item.color = value; $("componentColor").value = value; $("hexColor").value = value.toUpperCase(); render();
   }
   let pointer = null;
@@ -290,7 +295,7 @@
   function startPointer(ev, id, resizing) {
     ev.preventDefault(); ev.stopPropagation();
     const item = state.items.find(i => i.id === id); if (!item) return;
-    if (resizing && ["nc","battery","motherboard","cpu","gpu","ram","ssd"].includes(item.type)) return;
+    if (FIXED_TYPES.includes(item.type) || (item.type === "motherboard" && resizing)) { toast("Internal components are fixed in their slots"); return; }
     state.selected = id;
     render();
     const point = canvasPoint(ev);
@@ -327,8 +332,9 @@
         item.h = Math.max(minSize, Math.min(620 - item.y, pointer.h + dy));
       }
     } else {
-      item.x = Math.max(0,Math.min(420-item.w,pointer.x+moveX));
-      item.y = Math.max(0,Math.min(620-item.h,pointer.y+dy));
+      item.x = Math.max(PHONE_BOUNDS.x,Math.min(PHONE_BOUNDS.x+PHONE_BOUNDS.w-item.w,pointer.x+moveX));
+      item.y = Math.max(PHONE_BOUNDS.y,Math.min(PHONE_BOUNDS.y+PHONE_BOUNDS.h-item.h,pointer.y+dy));
+      if (item.type === "motherboard") { const sx=item.x-pointer.x, sy=item.y-pointer.y; INNER_TYPES.forEach(type=>state.items.filter(part=>part.type===type && (part.parentId===item.id || part.parentId==null)).forEach(part=>{part.parentId=item.id;part.x+=sx;part.y+=sy;})); }
     }
     render();
   }
@@ -347,6 +353,7 @@
   function serialize() { return {name:"Horizon",view:state.view,items:state.items.map(i=>({...i}))}; }
   function loadDesign(data) {
     state.items = (data.items || []).map(i=>({...i}));
+    const board=state.items.find(i=>i.type==="motherboard"); if(board) state.items.filter(i=>INNER_TYPES.includes(i.type)).forEach(part=>{if(part.parentId==null)part.parentId=board.id;}); state.items.forEach(clampToPhone);
     state.nextId = Math.max(0,...state.items.map(i=>i.id))+1; state.view=data.view||"rear"; state.selected=null;
     $("rearViewBtn").classList.toggle("active",state.view==="rear"); $("frontViewBtn").classList.toggle("active",state.view==="front"); $("internalViewBtn").classList.toggle("active",state.view==="inside"); $("topViewBtn").classList.toggle("active",state.view==="top"); $("bottomViewBtn").classList.toggle("active",state.view==="bottom"); render(); checkpointDesign();
   }
@@ -478,11 +485,11 @@
   $("componentMaterial").addEventListener("change",ev=>{const item=selectedItem();if(!item)return;item.material=ev.target.value;render();});
   $("hexColor").addEventListener("change",ev=>{let v=ev.target.value.trim();if(!v.startsWith("#"))v="#"+v;if(validHex(v))setColor(v);else updateProperties();});
   $("presetColors").addEventListener("click",ev=>{const b=ev.target.closest("[data-color]");if(b)setColor(b.dataset.color);});
-  $("posX").addEventListener("change",ev=>{const i=selectedItem();if(i){i.x=Math.max(0,Math.min(420-i.w,Number(ev.target.value)||0));render();}});
-  $("posY").addEventListener("change",ev=>{const i=selectedItem();if(i){i.y=Math.max(0,Math.min(620-i.h,Number(ev.target.value)||0));render();}});
-  $("sizeW").addEventListener("change",ev=>{const i=selectedItem();if(i && !["nc","battery","motherboard","cpu","gpu","ram","ssd"].includes(i.type)){i.w=Math.max(8,Math.min(420,Number(ev.target.value)||8));render();}});
-  $("sizeH").addEventListener("change",ev=>{const i=selectedItem();if(i && !["nc","battery","motherboard","cpu","gpu","ram","ssd"].includes(i.type)){i.h=Math.max(8,Math.min(620,Number(ev.target.value)||8));render();}});
-  $("rotation").addEventListener("input",ev=>{const i=selectedItem();if(i){i.rotation=Number(ev.target.value);$("rotationValue").value=i.rotation+"°";render();}});
+  $("posX").addEventListener("change",ev=>{const i=selectedItem();if(i&&!FIXED_TYPES.includes(i.type)&&i.type!=="motherboard"){i.x=Math.max(PHONE_BOUNDS.x,Math.min(PHONE_BOUNDS.x+PHONE_BOUNDS.w-i.w,Number(ev.target.value)||PHONE_BOUNDS.x));render();}});
+  $("posY").addEventListener("change",ev=>{const i=selectedItem();if(i&&!FIXED_TYPES.includes(i.type)&&i.type!=="motherboard"){i.y=Math.max(PHONE_BOUNDS.y,Math.min(PHONE_BOUNDS.y+PHONE_BOUNDS.h-i.h,Number(ev.target.value)||PHONE_BOUNDS.y));render();}});
+  $("sizeW").addEventListener("change",ev=>{const i=selectedItem();if(i&&!FIXED_TYPES.includes(i.type)&&i.type!=="motherboard"){i.w=Math.max(8,Math.min(PHONE_BOUNDS.x+PHONE_BOUNDS.w-i.x,Number(ev.target.value)||8));render();}});
+  $("sizeH").addEventListener("change",ev=>{const i=selectedItem();if(i&&!FIXED_TYPES.includes(i.type)&&i.type!=="motherboard"){i.h=Math.max(8,Math.min(PHONE_BOUNDS.y+PHONE_BOUNDS.h-i.y,Number(ev.target.value)||8));render();}});
+  $("rotation").addEventListener("input",ev=>{const i=selectedItem();if(i&&!FIXED_TYPES.includes(i.type)&&i.type!=="motherboard"){i.rotation=Number(ev.target.value);$("rotationValue").value=i.rotation+"°";render();}});
   $("duplicateBtn").addEventListener("click",()=>{const i=selectedItem();if(!i){toast("Select a component first");return;}const copy={...i,id:state.nextId++,name:i.name+" copy",x:Math.min(420-i.w,i.x+18),y:Math.min(620-i.h,i.y+18),layer:Math.max(...state.items.map(n=>n.layer))+1};state.items.push(copy);selectItem(copy.id);render();toast("Component duplicated");});
   $("deleteBtn").addEventListener("click",()=>{if(!state.selected){toast("Select a component first");return;}state.items=state.items.filter(i=>i.id!==state.selected);state.selected=null;render();toast("Component removed");});
   $("bringFrontBtn").addEventListener("click",()=>reorder(state.selected,"front"));
