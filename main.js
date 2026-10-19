@@ -42,6 +42,7 @@
   }
   const INNER_TYPES = ["cpu","gpu","ram","ssd"];
   const FIXED_TYPES = ["nc","battery","cpu","gpu","ram","ssd"];
+  const LOCKED_POSITION_TYPES = [...FIXED_TYPES,"screen"];
   const PHONE_BOUNDS = { x:115, y:85, w:190, h:410 };
   function clampToPhone(item) { if (!item || item.type === "body" || item.type === "button") return; item.x=Math.max(PHONE_BOUNDS.x,Math.min(PHONE_BOUNDS.x+PHONE_BOUNDS.w-item.w,item.x)); item.y=Math.max(PHONE_BOUNDS.y,Math.min(PHONE_BOUNDS.y+PHONE_BOUNDS.h-item.h,item.y)); }
   function makeItem(type, overrides = {}) {
@@ -271,8 +272,8 @@
     $("componentColor").value = validHex(item.color) ? item.color : "#d9dde5";
     $("hexColor").value = item.color.toUpperCase();
     $("componentMaterial").value = item.material || "default";
+    const fixedSize = FIXED_TYPES.includes(item.type) || item.type==="motherboard" || item.type==="screen"; const fixedPosition = LOCKED_POSITION_TYPES.includes(item.type) || item.type==="motherboard";
     $("posX").value = Math.round(item.x); $("posY").value = Math.round(item.y); $("posX").disabled=fixedPosition; $("posY").disabled=fixedPosition;
-    const fixedSize = FIXED_TYPES.includes(item.type) || item.type==="motherboard"; const fixedPosition = FIXED_TYPES.includes(item.type) || item.type==="motherboard";
     $("sizeW").value = Math.round(item.w); $("sizeH").value = Math.round(item.h);
     $("sizeW").disabled = fixedSize; $("sizeH").disabled = fixedSize;
     $("sizeW").title = fixedSize ? "Internal components have fixed sizes" : "";
@@ -295,7 +296,7 @@
   function startPointer(ev, id, resizing) {
     ev.preventDefault(); ev.stopPropagation();
     const item = state.items.find(i => i.id === id); if (!item) return;
-    if (FIXED_TYPES.includes(item.type) || (item.type === "motherboard" && resizing)) { toast("Internal components are fixed in their slots"); return; }
+    if (LOCKED_POSITION_TYPES.includes(item.type) || (item.type === "motherboard" && resizing)) { toast("Internal components are fixed in their slots"); return; }
     state.selected = id;
     render();
     const point = canvasPoint(ev);
