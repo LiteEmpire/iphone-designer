@@ -16,6 +16,7 @@
     gpu: { name: "Nova GPU · NG1", x: 196, y: 198, w: 86, h: 42, color: "#536b56", radius: 8, layer: 9 },
     ram: { name: "Nova RAM · NR1", x: 196, y: 246, w: 86, h: 34, color: "#a77b48", radius: 7, layer: 10 },
     ssd: { name: "Nova SSD · NS1", x: 196, y: 285, w: 86, h: 30, color: "#76619c", radius: 7, layer: 11 },
+    frontCamera: { name: "Front camera", x: 198, y: 102, w: 16, h: 16, color: "#111827", radius: 8, layer: 3 },
     screen: { name: "Display", x: 127, y: 98, w: 166, h: 384, color: "#252b38", radius: 25, layer: 1 },
     camera: { name: "Camera module", x: 132, y: 112, w: 76, h: 94, color: "#343a47", radius: 18, layer: 2 },
     lens: { name: "Camera lens", x: 145, y: 124, w: 25, h: 25, color: "#111827", radius: 13, layer: 3 },
@@ -24,7 +25,7 @@
     button: { name: "Side button", x: 302, y: 205, w: 8, h: 58, color: "#9da5b2", radius: 4, layer: 6 },
     detail: { name: "Custom detail", x: 220, y: 350, w: 40, h: 24, color: "#91a8c7", radius: 8, layer: 7 }
   };
-  const initial = ["body", "screen", "camera", "lens", "lens", "flash", "logo", "button"];
+  const initial = ["body", "screen", "frontCamera", "camera", "lens", "lens", "flash", "logo", "button"];
   let toastTimer;
   function toast(message) {
     const el = $("toast"); el.textContent = message; el.classList.add("show");
@@ -32,7 +33,7 @@
   }
   function makeItem(type, overrides = {}) {
     const d = defaults[type] || defaults.detail;
-    const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : ["nc", "battery", "motherboard", "cpu", "gpu", "ram", "ssd"].includes(type) ? "inside" : state.view;
+    const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" || type === "frontCamera" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : ["nc", "battery", "motherboard", "cpu", "gpu", "ram", "ssd"].includes(type) ? "inside" : state.view;
     const item = { id: state.nextId++, type, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h, color: d.color, radius: d.radius || 0, rotation: 0, layer: type === "nc" ? -1 : state.items.length, view: defaultView, ...overrides };
     if (type === "lens" && state.items.some(i => i.type === "lens")) {
       const count = state.items.filter(i => i.type === "lens").length;
@@ -131,7 +132,7 @@
     } else if (item.type === "logo") {
       shape = el("text", { x: item.x + item.w/2, y: item.y + item.h*.72, "text-anchor":"middle", "font-family":"Space Grotesk, sans-serif", "font-size":Math.max(12,item.w*.65), "font-weight":"700", fill:item.color });
       shape.textContent = "N";
-    } else if (item.type === "lens") {
+    } else if (item.type === "lens" || item.type === "frontCamera") {
       shape = el("g");
       shape.appendChild(el("circle", {cx:item.x+item.w/2,cy:item.y+item.h/2,r:Math.min(item.w,item.h)*.49,fill:item.color,stroke:"#8792a5","stroke-width":2}));
       shape.appendChild(el("circle", {cx:item.x+item.w/2,cy:item.y+item.h/2,r:Math.min(item.w,item.h)*.29,fill:"#263c5a",stroke:"#617da5","stroke-width":2}));
@@ -193,7 +194,7 @@
   }
   function isVisibleInView(item) {
     // Older saved designs do not have a view property; infer their original component side.
-    const side = item.view || (["body", "button"].includes(item.type) ? "both" : item.type === "screen" ? "front" : ["camera", "lens", "flash", "logo"].includes(item.type) ? "rear" : ["nc", "battery", "motherboard", "cpu", "gpu", "ram", "ssd"].includes(item.type) ? "inside" : "both");
+    const side = item.view || (["body", "button"].includes(item.type) ? "both" : item.type === "screen" || item.type === "frontCamera" ? "front" : ["camera", "lens", "flash", "logo"].includes(item.type) ? "rear" : ["nc", "battery", "motherboard", "cpu", "gpu", "ram", "ssd"].includes(item.type) ? "inside" : "both");
     // The exterior shell must not cover the chassis in the internal layout.
     // The NC chassis is the base layer; internal parts render above it.
     if (state.view === "inside" && ["body", "button"].includes(item.type)) return false;
