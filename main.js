@@ -27,6 +27,14 @@
   };
   const initial = ["body", "screen", "frontCamera", "camera", "lens", "lens", "flash", "logo", "button"];
   let toastTimer;
+  let designCheckpoint = "";
+  function checkpointDesign() { designCheckpoint = JSON.stringify(serialize()); }
+  function hasUnsavedCanvasChanges() { return designCheckpoint !== JSON.stringify(serialize()); }
+  window.addEventListener("beforeunload", (event) => {
+    if (!hasUnsavedCanvasChanges()) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
   function toast(message) {
     const el = $("toast"); el.textContent = message; el.classList.add("show");
     clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
@@ -272,7 +280,7 @@
   function loadDesign(data) {
     state.items = (data.items || []).map(i=>({...i}));
     state.nextId = Math.max(0,...state.items.map(i=>i.id))+1; state.view=data.view||"rear"; state.selected=null;
-    $("rearViewBtn").classList.toggle("active",state.view==="rear"); $("frontViewBtn").classList.toggle("active",state.view==="front"); $("internalViewBtn").classList.toggle("active",state.view==="inside"); render();
+    $("rearViewBtn").classList.toggle("active",state.view==="rear"); $("frontViewBtn").classList.toggle("active",state.view==="front"); $("internalViewBtn").classList.toggle("active",state.view==="inside"); render(); checkpointDesign();
   }
   async function loadSaved() {
     if (state.user) {
@@ -348,14 +356,14 @@
     data.title=data.title.trim() || "Horizon concept";
     const { data: row, error } = await supabase.from("designs").insert({ user_id: state.user.id, name: data.title, design: data }).select("id,name,design,created_at").single();
     if (error) { console.error(error); toast("Could not save design. Please try again."); return; }
-    state.saved.unshift({ ...row.design, cloudId: row.id, title: row.name }); state.saved=state.saved.slice(0,30); renderSaved(); toast("Design saved privately to your account");
+    state.saved.unshift({ ...row.design, cloudId: row.id, title: row.name }); state.saved=state.saved.slice(0,30); renderSaved(); checkpointDesign(); toast("Design saved privately to your account");
   }
   function reset() {
     state.items=[]; state.nextId=1; initial.forEach(type=>state.items.push(makeItem(type)));
     // Make the second lens sit beside the first and use a simple, balanced camera layout.
     const lenses=state.items.filter(i=>i.type==="lens"); if(lenses[1]) {lenses[1].x=174;lenses[1].y=124;}
     state.items.forEach((item,index)=>item.layer=index);
-    state.view="rear";state.selected=null;$("rearViewBtn").classList.add("active");$("frontViewBtn").classList.remove("active");$("internalViewBtn").classList.remove("active");$("canvasGrid").classList.remove("hidden");state.grid=true;$("gridBtn").classList.add("active");render();
+    state.view="rear";state.selected=null;$("rearViewBtn").classList.add("active");$("frontViewBtn").classList.remove("active");$("internalViewBtn").classList.remove("active");$("canvasGrid").classList.remove("hidden");state.grid=true;$("gridBtn").classList.add("active");render();checkpointDesign();
   }
   function switchView(view) {
     if (view !== "rear" && view !== "front" && view !== "inside") return;
