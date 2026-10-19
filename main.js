@@ -416,8 +416,8 @@
       const thumb=document.createElement("div"); thumb.className="saved-thumb";
       const body=d.items.find(i=>i.type==="body"); if(body) thumb.style.background=body.color;
       const info=document.createElement("div"); info.className="saved-card-info";
-      const name=document.createElement("b"); name.textContent=d.title || "Horizon concept";
-      const sub=document.createElement("small"); sub.textContent=d.items.length+" components";
+      const name=document.createElement("b"); name.textContent=d.title || d.name || (d.design && d.design.title) || "Untitled project"; name.title=name.textContent;
+      const sub=document.createElement("small"); sub.textContent=(Array.isArray(d.items)?d.items.length:0)+" components";
       info.append(name,sub);
       const load=document.createElement("button"); load.textContent="Open"; load.addEventListener("click",()=>{loadDesign(d);toast("Design opened");window.scrollTo({top:0,behavior:"smooth"});});
       const update=document.createElement("button"); update.textContent="Update with current design"; update.className="text-button"; update.setAttribute("aria-label","Replace "+(d.title || "saved design")+" with the current canvas design"); update.addEventListener("click",async()=>{
