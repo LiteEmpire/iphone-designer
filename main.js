@@ -10,7 +10,8 @@
   const defaults = {
     body: { name: "Phone body", x: 115, y: 85, w: 190, h: 410, color: "#d9dde5", radius: 31, layer: 0 },
     nc: { name: "Nova Chassis · NC", x: 95, y: 115, w: 230, h: 390, color: "#8b96a8", radius: 22, layer: 0 },
-    battery: { name: "Battery · NB1", x: 119, y: 270, w: 54, h: 130, color: "#354657", radius: 8, layer: 5 },
+    battery: { name: "Battery · NB1 · 6,000 mAh", x: 119, y: 270, w: 54, h: 130, color: "#354657", radius: 8, layer: 5 },
+    batteryMax: { name: "Nova Battery · NB3 · 7,500 mAh", x: 119, y: 270, w: 54, h: 130, color: "#1f5a43", radius: 8, layer: 5 },
     motherboard: { name: "Motherboard · NMB1", x: 190, y: 145, w: 100, h: 185, color: "#244b3a", radius: 7, layer: 6 },
     cpu: { name: "Nova CPU · N1", x: 196, y: 150, w: 86, h: 42, color: "#4b638c", radius: 8, layer: 8 },
     gpu: { name: "Nova GPU · NG1", x: 196, y: 198, w: 86, h: 42, color: "#536b56", radius: 8, layer: 9 },
@@ -41,13 +42,13 @@
     clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
   }
   const INNER_TYPES = ["cpu","gpu","ram","ssd"];
-  const FIXED_TYPES = ["nc","battery","cpu","gpu","ram","ssd"];
+  const FIXED_TYPES = ["nc","battery","batteryMax","cpu","gpu","ram","ssd"];
   const LOCKED_POSITION_TYPES = [...FIXED_TYPES,"screen"];
   const PHONE_BOUNDS = { x:115, y:85, w:190, h:410 };
   function clampToPhone(item) { if (!item || item.type === "body" || item.type === "button") return; item.x=Math.max(PHONE_BOUNDS.x,Math.min(PHONE_BOUNDS.x+PHONE_BOUNDS.w-item.w,item.x)); item.y=Math.max(PHONE_BOUNDS.y,Math.min(PHONE_BOUNDS.y+PHONE_BOUNDS.h-item.h,item.y)); }
   function makeItem(type, overrides = {}) {
     const d = defaults[type] || defaults.detail;
-    const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" || type === "frontCamera" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : ["nc", "battery", "motherboard", "cpu", "gpu", "ram", "ssd"].includes(type) ? "inside" : state.view;
+    const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" || type === "frontCamera" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : ["nc", "battery", "batteryMax", "motherboard", "cpu", "gpu", "ram", "ssd"].includes(type) ? "inside" : state.view;
     const parentBoard = INNER_TYPES.includes(type) ? state.items.find(i=>i.type==="motherboard") : null;
     const item = { id: state.nextId++, type, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h, color: d.color, radius: d.radius || 0, rotation: 0, layer: type === "nc" ? -1 : state.items.length, view: defaultView, ...(parentBoard ? {parentId:parentBoard.id} : {}), ...overrides };
     if (type === "lens" && state.items.some(i => i.type === "lens")) {
@@ -98,7 +99,7 @@
       // Compound even-odd path: the interior subpaths are real transparent cutouts,
       // not painted-on rectangles. Layout is a conceptual smartphone midframe.
       const x=item.x, y=item.y, w=item.w, h=item.h;
-      const insideParts = state.items.filter(part => ["motherboard","battery"].includes(part.type));
+      const insideParts = state.items.filter(part => ["motherboard","battery","batteryMax"].includes(part.type));
       const holes = insideParts.map(part => {
         const px = part.x, py = part.y, pw = part.w, ph = part.h;
         const radius = Math.max(2, Math.min(part.radius || 7, pw/2, ph/2));
@@ -113,12 +114,12 @@
       });
       // Small rail details make the frame look machined rather than like a plain plate.
       shape.appendChild(el("path",{d:`M ${x+83} ${y+22} v 100 M ${x+83} ${y+140} v 150`,fill:"none",stroke:"#d8dee8","stroke-width":2,"stroke-linecap":"round"}));
-    } else if (item.type === "battery") {
+    } else if (item.type === "battery" || item.type === "batteryMax") {
       shape = el("g");
       shape.appendChild(el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||8,fill:item.color,stroke:"#b9c6d3","stroke-width":2}));
       shape.appendChild(el("rect", {x:item.x+item.w*.36,y:item.y-4,width:item.w*.28,height:5,rx:2,fill:"#cbd5e1"}));
       const bt = el("text",{x:item.x+item.w/2,y:item.y+item.h/2-4,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":10,"font-weight":"700",fill:"#ffffff"}); bt.textContent="BATTERY"; shape.appendChild(bt);
-      const bc = el("text",{x:item.x+item.w/2,y:item.y+item.h/2+11,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":9,fill:"#dbeafe"}); bc.textContent="NB1"; shape.appendChild(bc);
+      const bc = el("text",{x:item.x+item.w/2,y:item.y+item.h/2+11,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":9,fill:"#dbeafe"}); bc.textContent=item.type === "batteryMax" ? "NB3 · 7500 mAh" : "NB1 · 6000 mAh"; shape.appendChild(bc);
     } else if (item.type === "motherboard") {
       shape = el("g");
       shape.appendChild(el("rect",{x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||7,fill:item.color,stroke:"#8cb8a1","stroke-width":2}));
@@ -253,7 +254,7 @@
   }
   function isVisibleInView(item) {
     // Older saved designs do not have a view property; infer their original component side.
-    const side = item.view || (["body", "button"].includes(item.type) ? "both" : item.type === "screen" || item.type === "frontCamera" ? "front" : ["camera", "lens", "flash", "logo"].includes(item.type) ? "rear" : ["nc", "battery", "motherboard", "cpu", "gpu", "ram", "ssd"].includes(item.type) ? "inside" : "both");
+    const side = item.view || (["body", "button"].includes(item.type) ? "both" : item.type === "screen" || item.type === "frontCamera" ? "front" : ["camera", "lens", "flash", "logo"].includes(item.type) ? "rear" : ["nc", "battery", "batteryMax", "motherboard", "cpu", "gpu", "ram", "ssd"].includes(item.type) ? "inside" : "both");
     // The exterior shell must not cover the chassis in the internal layout.
     // The NC chassis is the base layer; internal parts render above it.
     if (state.view === "inside" && ["body", "button"].includes(item.type)) return false;
