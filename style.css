@@ -160,3 +160,4 @@ body[data-theme="dark"] .preview-tab.active{background:#3a4353;color:#cdd8ff}
 
 /* Darker names for the smartphone concept cards */
 .intro-concepts .intro-chip strong{color:#080d1c}
+body[data-theme="dark"] .intro-concepts .intro-chip strong{color:#f1f4fa}
