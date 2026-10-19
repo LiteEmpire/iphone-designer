@@ -250,6 +250,25 @@
     $("canvasTitle").textContent = "Horizon · " + (viewNames[state.view] || "Rear design");
     $("dropHint").classList.toggle("hidden", state.items.some(i => isVisibleInView(i)));
     $("componentCount").textContent = state.items.length;
+    updateDesignPreview();
+  }
+  let previewSide = "exterior";
+  function updateDesignPreview() {
+    const savedView = state.view, savedSelection = state.selected;
+    const sorted = [...state.items].sort((a,b)=>a.layer-b.layer);
+    [["rear","exteriorPreviewSvg"],["inside","interiorPreviewSvg"]].forEach(([view,id])=>{
+      state.view=view; state.selected=null;
+      const preview=$(id); preview.replaceChildren();
+      sorted.filter(item=>isVisibleInView(item)).forEach(item=>preview.appendChild(shapeFor(item)));
+    });
+    state.view=savedView; state.selected=savedSelection;
+  }
+  function setPreviewSide(side) {
+    previewSide=side;
+    const exterior=side==="exterior";
+    $("previewExterior").hidden=!exterior; $("previewInterior").hidden=exterior;
+    $("previewExteriorBtn").classList.toggle("active",exterior); $("previewInteriorBtn").classList.toggle("active",!exterior);
+    $("previewExteriorBtn").setAttribute("aria-selected",String(exterior)); $("previewInteriorBtn").setAttribute("aria-selected",String(!exterior));
   }
   function isVisibleInView(item) {
     // Older saved designs do not have a view property; infer their original component side.
@@ -495,6 +514,8 @@
   $("deleteBtn").addEventListener("click",()=>{if(!state.selected){toast("Select a component first");return;}state.items=state.items.filter(i=>i.id!==state.selected);state.selected=null;render();toast("Component removed");});
   $("bringFrontBtn").addEventListener("click",()=>reorder(state.selected,"front"));
   $("sendBackBtn").addEventListener("click",()=>reorder(state.selected,"back"));
+  $("previewExteriorBtn").addEventListener("click",()=>setPreviewSide("exterior"));
+  $("previewInteriorBtn").addEventListener("click",()=>setPreviewSide("interior"));
   $("rearViewBtn").addEventListener("click",()=>switchView("rear"));
   $("frontViewBtn").addEventListener("click",()=>switchView("front"));
   $("internalViewBtn").addEventListener("click",()=>switchView("inside"));
