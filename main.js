@@ -43,7 +43,8 @@
   function makeItem(type, overrides = {}) {
     const d = defaults[type] || defaults.detail;
     const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" || type === "frontCamera" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : ["nc", "battery", "motherboard", "cpu", "gpu", "ram", "ssd"].includes(type) ? "inside" : state.view;
-    const item = { id: state.nextId++, type, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h, color: d.color, radius: d.radius || 0, rotation: 0, layer: type === "nc" ? -1 : state.items.length, view: defaultView, ...overrides };
+    const parentBoard = INNER_TYPES.includes(type) ? state.items.find(i=>i.type==="motherboard") : null;
+    const item = { id: state.nextId++, type, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h, color: d.color, radius: d.radius || 0, rotation: 0, layer: type === "nc" ? -1 : state.items.length, view: defaultView, ...(parentBoard ? {parentId:parentBoard.id} : {}), ...overrides };
     if (type === "lens" && state.items.some(i => i.type === "lens")) {
       const count = state.items.filter(i => i.type === "lens").length;
       item.x = d.x + (count % 2) * 31; item.y = d.y + Math.floor(count / 2) * 31;
