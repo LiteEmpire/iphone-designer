@@ -28,6 +28,7 @@
   const initial = ["body", "screen", "frontCamera", "camera", "lens", "lens", "flash", "logo", "button"];
   let toastTimer;
   let designCheckpoint = "";
+  let contextBodyId = null;
   function checkpointDesign() { designCheckpoint = JSON.stringify(serialize()); }
   function hasUnsavedCanvasChanges() { return designCheckpoint !== JSON.stringify(serialize()); }
   window.addEventListener("beforeunload", (event) => {
@@ -178,6 +179,16 @@
       }
     }
     group.appendChild(shape);
+    if (item.type === "body" && item.imageData) {
+      const clipId = `body-image-clip-${item.id}`;
+      const defs = el("defs");
+      const clip = el("clipPath", { id: clipId, clipPathUnits: "userSpaceOnUse" });
+      clip.appendChild(el("rect", { x:item.x, y:item.y, width:item.w, height:item.h, rx:Math.min(item.w,item.h)*.16 }));
+      defs.appendChild(clip);
+      group.appendChild(defs);
+      group.appendChild(el("image", { href:item.imageData, x:item.x, y:item.y, width:item.w, height:item.h, preserveAspectRatio:"xMidYMid slice", "clip-path":`url(#${clipId})`, "pointer-events":"none" }));
+      group.appendChild(el("rect", { x:item.x, y:item.y, width:item.w, height:item.h, rx:Math.min(item.w,item.h)*.16, fill:"none", stroke:"#9ca5b4", "stroke-width":2, "pointer-events":"none" }));
+    }
     if (["cpu","gpu","ram","ssd"].includes(item.type)) {
       const code = ({cpu:"N1",gpu:"NG1",ram:"NR1",ssd:"NS1"})[item.type];
       const chipText = el("text",{x:item.x+item.w/2,y:item.y+item.h*.43,"text-anchor":"middle","font-family":"Space Grotesk, sans-serif","font-size":Math.max(10,Math.min(16,item.w*.12)),"font-weight":"700",fill:"#ffffff"}); chipText.textContent=code; group.appendChild(chipText);
@@ -202,6 +213,18 @@
       });
     }
     group.addEventListener("pointerdown", ev => startPointer(ev,item.id, ev.target.hasAttribute("data-resize")));
+    if (item.type === "body" && state.view === "rear") {
+      group.addEventListener("contextmenu", ev => {
+        ev.preventDefault(); ev.stopPropagation();
+        contextBodyId = item.id;
+        const menu = $("bodyContextMenu");
+        const area = $("canvasArea").getBoundingClientRect();
+        menu.hidden = false;
+        menu.style.left = `${Math.max(8,Math.min(area.width-190,ev.clientX-area.left))}px`;
+        menu.style.top = `${Math.max(8,Math.min(area.height-82,ev.clientY-area.top))}px`;
+        $("removeBodyImageBtn").hidden = !item.imageData;
+      });
+    }
     return group;
   }
   function render() {
@@ -426,6 +449,26 @@
     btn.addEventListener("dragstart",ev=>{ev.dataTransfer.setData("text/plain",btn.dataset.add);ev.dataTransfer.effectAllowed="copy";});
   });
   const canvasArea=$("canvasArea");
+  const bodyImageInput=$("bodyImageInput");
+  function closeBodyContextMenu(){ $("bodyContextMenu").hidden=true; }
+  $("insertBodyImageBtn").addEventListener("click",()=>{closeBodyContextMenu();if(contextBodyId===null)return;bodyImageInput.value="";bodyImageInput.click();});
+  $("removeBodyImageBtn").addEventListener("click",()=>{const item=state.items.find(i=>i.id===contextBodyId);if(item){delete item.imageData;delete item.imageMime;render();toast("Phone body image removed");}closeBodyContextMenu();});
+  bodyImageInput.addEventListener("change",()=>{
+    const file=bodyImageInput.files&&bodyImageInput.files[0];
+    const item=state.items.find(i=>i.id===contextBodyId);
+    if(!file||!item)return;
+    const allowedTypes=["image/jpeg","image/png"];
+    const extOk=/\.(jpe?g|png)$/i.test(file.name);
+    if(!allowedTypes.includes(file.type)||!extOk){toast("Choose a JPEG or PNG image");bodyImageInput.value="";return;}
+    if(file.size>5*1024*1024){toast("Image must be 5 MB or smaller");bodyImageInput.value="";return;}
+    const reader=new FileReader();
+    reader.onload=()=>{if(typeof reader.result!=="string")return;item.imageData=reader.result;item.imageMime=file.type;render();toast("Image added to phone body");};
+    reader.onerror=()=>toast("Could not read that image");
+    reader.readAsDataURL(file);
+  });
+  canvasArea.addEventListener("contextmenu",ev=>{if(state.view==="rear"&&!ev.target.closest("[data-id]"))closeBodyContextMenu();});
+  document.addEventListener("pointerdown",ev=>{if(!ev.target.closest("#bodyContextMenu"))closeBodyContextMenu();});
+  document.addEventListener("keydown",ev=>{if(ev.key==="Escape")closeBodyContextMenu();});
   canvasArea.addEventListener("dragover",ev=>{ev.preventDefault();canvasArea.classList.add("drag-over");if(ev.dataTransfer)ev.dataTransfer.dropEffect="copy";});
   canvasArea.addEventListener("dragleave",ev=>{if(!canvasArea.contains(ev.relatedTarget))canvasArea.classList.remove("drag-over");});
   canvasArea.addEventListener("drop",ev=>{ev.preventDefault();canvasArea.classList.remove("drag-over");const type=ev.dataTransfer.getData("text/plain");if(!defaults[type])return;const item=makeItem(type);const point=canvasPoint({clientX:ev.clientX,clientY:ev.clientY});item.x=Math.max(0,Math.min(420-item.w,point.x-item.w/2));item.y=Math.max(0,Math.min(620-item.h,point.y-item.h/2));state.items.push(item);if(item.view!=="both"&&item.view!==state.view){switchView(item.view);state.selected=item.id;render();}else{state.selected=item.id;render();}toast(item.name+" added to frame");});
