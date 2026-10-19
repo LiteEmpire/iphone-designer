@@ -108,6 +108,22 @@
       shape = el("g");
       shape.appendChild(el("rect",{x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||7,fill:item.color,stroke:"#8cb8a1","stroke-width":2}));
       [[.18,.12],[.78,.16],[.2,.8],[.82,.82]].forEach(([px,py])=>shape.appendChild(el("circle",{cx:item.x+item.w*px,cy:item.y+item.h*py,r:3,fill:"#d5c69b"})));
+      // Four visible component sockets on the Nova motherboard. The chips sit
+      // over these outlined ports, leaving gold contacts visible at the sides.
+      const sockets = [
+        {label:"CPU SOCKET", x:item.x+3, y:item.y+4, w:item.w-6, h:46, pins:7},
+        {label:"GPU SOCKET", x:item.x+3, y:item.y+52, w:item.w-6, h:46, pins:7},
+        {label:"RAM PORT", x:item.x+3, y:item.y+100, w:item.w-6, h:38, pins:6},
+        {label:"SSD PORT", x:item.x+3, y:item.y+139, w:item.w-6, h:34, pins:6}
+      ];
+      sockets.forEach(socket => {
+        shape.appendChild(el("rect",{x:socket.x,y:socket.y,width:socket.w,height:socket.h,rx:4,fill:"#142d24",stroke:"#e0bd70","stroke-width":1.5}));
+        for(let p=0;p<socket.pins;p++){
+          const py=socket.y+5+p*((socket.h-10)/Math.max(1,socket.pins-1));
+          shape.appendChild(el("rect",{x:socket.x+1.5,y:py,width:3,height:2,rx:0.7,fill:"#e6c66f"}));
+          shape.appendChild(el("rect",{x:socket.x+socket.w-4.5,y:py,width:3,height:2,rx:0.7,fill:"#e6c66f"}));
+        }
+      });
       const mt = el("text",{x:item.x+item.w/2,y:item.y+item.h-14,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":9,"font-weight":"700",fill:"#f0fdf4"}); mt.textContent="MOTHERBOARD"; shape.appendChild(mt);
       const mc = el("text",{x:item.x+item.w/2,y:item.y+item.h-3,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":8,fill:"#d1fae5"}); mc.textContent="NMB1"; shape.appendChild(mc);
     } else if (["cpu","gpu","ram","ssd"].includes(item.type)) {
