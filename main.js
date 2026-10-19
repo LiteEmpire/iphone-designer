@@ -324,7 +324,7 @@
   function loadDesign(data) {
     state.items = (data.items || []).map(i=>({...i}));
     state.nextId = Math.max(0,...state.items.map(i=>i.id))+1; state.view=data.view||"rear"; state.selected=null;
-    $("rearViewBtn").classList.toggle("active",state.view==="rear"); $("frontViewBtn").classList.toggle("active",state.view==="front"); $("internalViewBtn").classList.toggle("active",state.view==="inside"); render(); checkpointDesign();
+    $("rearViewBtn").classList.toggle("active",state.view==="rear"); $("frontViewBtn").classList.toggle("active",state.view==="front"); $("internalViewBtn").classList.toggle("active",state.view==="inside"); $("topViewBtn").classList.toggle("active",state.view==="top"); $("bottomViewBtn").classList.toggle("active",state.view==="bottom"); render(); checkpointDesign();
   }
   async function loadSaved() {
     if (state.user) {
