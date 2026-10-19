@@ -73,8 +73,6 @@
         `M ${x+91} ${y+20} h 105 a 7 7 0 0 1 7 7 v 175 a 7 7 0 0 1 -7 7 h -105 a 7 7 0 0 1 -7 -7 v -175 a 7 7 0 0 1 7 -7 Z`,
         // Battery cavity.
         `M ${x+28} ${y+145} h 50 a 8 8 0 0 1 8 8 v 142 a 8 8 0 0 1 -8 8 h -50 a 8 8 0 0 1 -8 -8 v -142 a 8 8 0 0 1 8 -8 Z`,
-        // Lower daughterboard / loudspeaker well.
-        `M ${x+91} ${y+310} h 105 a 7 7 0 0 1 7 7 v 43 a 7 7 0 0 1 -7 7 h -105 a 7 7 0 0 1 -7 -7 v -43 a 7 7 0 0 1 7 -7 Z`,
         // USB-C port opening and screw/mounting holes.
         `M ${x+w/2-17} ${y+h-9} h 34 a 4 4 0 0 1 4 4 v 8 h -42 v -8 a 4 4 0 0 1 4 -4 Z`
       ].join(" ");
@@ -89,7 +87,6 @@
       const portLabels = [
         {text:"MOTHERBOARD BAY", x:x+146, y:y+15, width:88},
         {text:"BATTERY BAY", x:x+53, y:y+138, width:68},
-        {text:"LOWER BOARD", x:x+146, y:y+303, width:72},
         {text:"USB-C PORT", x:x+w/2, y:y+h-12, width:64}
       ];
       portLabels.forEach(label => {
@@ -98,7 +95,7 @@
         t.textContent=label.text; shape.appendChild(t);
       });
       // Small rail details make the frame look machined rather than like a plain plate.
-      shape.appendChild(el("path",{d:`M ${x+83} ${y+22} v 100 M ${x+83} ${y+140} v 150 M ${x+87} ${y+312} v 42`,fill:"none",stroke:"#d8dee8","stroke-width":2,"stroke-linecap":"round"}));
+      shape.appendChild(el("path",{d:`M ${x+83} ${y+22} v 100 M ${x+83} ${y+140} v 150`,fill:"none",stroke:"#d8dee8","stroke-width":2,"stroke-linecap":"round"}));
     } else if (item.type === "battery") {
       shape = el("g");
       shape.appendChild(el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||8,fill:item.color,stroke:"#b9c6d3","stroke-width":2}));
@@ -292,6 +289,23 @@
   }
   async function loadSaved() {
     if (state.user) {
+      // Import older browser-only designs into the signed-in account for cross-device access.
+      let localDesigns = [];
+      try { localDesigns = JSON.parse(localStorage.getItem("nova-horizon-designs") || "[]"); } catch { localDesigns = []; }
+      if (Array.isArray(localDesigns) && localDesigns.length) {
+        const rows = localDesigns.map(d => {
+          const title = String(d.title || d.name || "Horizon concept").trim() || "Horizon concept";
+          return { user_id: state.user.id, name: title, design: { ...d, title } };
+        });
+        const { error: migrationError } = await supabase.from("designs").insert(rows);
+        if (migrationError) {
+          console.error(migrationError);
+          toast("Browser-only designs could not sync; local copies were kept.");
+        } else {
+          localStorage.removeItem("nova-horizon-designs");
+          toast("Previous saved designs synced to your account");
+        }
+      }
       const { data, error } = await supabase.from("designs").select("id,name,design,created_at").order("updated_at", { ascending: false });
       if (error) { toast("Could not load your cloud designs"); console.error(error); return; }
       state.saved = (data || []).map(row => ({ ...row.design, cloudId: row.id, title: row.name }));
