@@ -76,13 +76,13 @@
       // Compound even-odd path: the interior subpaths are real transparent cutouts,
       // not painted-on rectangles. Layout is a conceptual smartphone midframe.
       const x=item.x, y=item.y, w=item.w, h=item.h;
-      const holes = [
-        // Main-board/chip area.
-        `M ${x+91} ${y+20} h 105 a 7 7 0 0 1 7 7 v 175 a 7 7 0 0 1 -7 7 h -105 a 7 7 0 0 1 -7 -7 v -175 a 7 7 0 0 1 7 -7 Z`,
-        // Battery cavity.
-        `M ${x+28} ${y+145} h 50 a 8 8 0 0 1 8 8 v 142 a 8 8 0 0 1 -8 8 h -50 a 8 8 0 0 1 -8 -8 v -142 a 8 8 0 0 1 8 -8 Z`,
-        // Chassis openings are reserved only for the motherboard and battery.
-      ].join(" ");
+      const insideParts = state.items.filter(part => ["motherboard","battery"].includes(part.type));
+      const holes = insideParts.map(part => {
+        const px = part.x, py = part.y, pw = part.w, ph = part.h;
+        const radius = Math.max(2, Math.min(part.radius || 7, pw/2, ph/2));
+        // Each chassis opening follows the matching component's position, size, and corner radius.
+        return `M ${px+radius} ${py} H ${px+pw-radius} Q ${px+pw} ${py} ${px+pw} ${py+radius} V ${py+ph-radius} Q ${px+pw} ${py+ph} ${px+pw-radius} ${py+ph} H ${px+radius} Q ${px} ${py+ph} ${px} ${py+ph-radius} V ${py+radius} Q ${px} ${py} ${px+radius} ${py} Z`;
+      }).join(" ");
       const outer = `M ${x+22} ${y} H ${x+w-22} Q ${x+w} ${y} ${x+w} ${y+22} V ${y+h-22} Q ${x+w} ${y+h} ${x+w-22} ${y+h} H ${x+22} Q ${x} ${y+h} ${x} ${y+h-22} V ${y+22} Q ${x} ${y} ${x+22} ${y} Z`;
       shape.appendChild(el("path", {d:outer+" "+holes,fill:item.color,stroke:"#d8dee8","stroke-width":3,"fill-rule":"evenodd","fill-opacity":0.96}));
       // Reinforcing ribs and screw bosses around the component cavities.
@@ -204,7 +204,11 @@
     $("componentColor").value = validHex(item.color) ? item.color : "#d9dde5";
     $("hexColor").value = item.color.toUpperCase();
     $("posX").value = Math.round(item.x); $("posY").value = Math.round(item.y);
+    const fixedSize = ["nc","battery","motherboard","cpu","gpu","ram","ssd"].includes(item.type);
     $("sizeW").value = Math.round(item.w); $("sizeH").value = Math.round(item.h);
+    $("sizeW").disabled = fixedSize; $("sizeH").disabled = fixedSize;
+    $("sizeW").title = fixedSize ? "Internal components have fixed sizes" : "";
+    $("sizeH").title = fixedSize ? "Internal components have fixed sizes" : "";
     $("rotation").value = item.rotation; $("rotationValue").value = item.rotation + "°";
   }
   function validHex(value) { return /^#[0-9a-f]{6}$/i.test(value); }
@@ -223,6 +227,7 @@
   function startPointer(ev, id, resizing) {
     ev.preventDefault(); ev.stopPropagation();
     const item = state.items.find(i => i.id === id); if (!item) return;
+    if (resizing && ["nc","battery","motherboard","cpu","gpu","ram","ssd"].includes(item.type)) return;
     state.selected = id;
     render();
     const point = canvasPoint(ev);
@@ -389,8 +394,8 @@
   $("presetColors").addEventListener("click",ev=>{const b=ev.target.closest("[data-color]");if(b)setColor(b.dataset.color);});
   $("posX").addEventListener("change",ev=>{const i=selectedItem();if(i){i.x=Math.max(0,Math.min(420-i.w,Number(ev.target.value)||0));render();}});
   $("posY").addEventListener("change",ev=>{const i=selectedItem();if(i){i.y=Math.max(0,Math.min(620-i.h,Number(ev.target.value)||0));render();}});
-  $("sizeW").addEventListener("change",ev=>{const i=selectedItem();if(i){i.w=Math.max(8,Math.min(420,Number(ev.target.value)||8));render();}});
-  $("sizeH").addEventListener("change",ev=>{const i=selectedItem();if(i){i.h=Math.max(8,Math.min(620,Number(ev.target.value)||8));render();}});
+  $("sizeW").addEventListener("change",ev=>{const i=selectedItem();if(i && !["nc","battery","motherboard","cpu","gpu","ram","ssd"].includes(i.type)){i.w=Math.max(8,Math.min(420,Number(ev.target.value)||8));render();}});
+  $("sizeH").addEventListener("change",ev=>{const i=selectedItem();if(i && !["nc","battery","motherboard","cpu","gpu","ram","ssd"].includes(i.type)){i.h=Math.max(8,Math.min(620,Number(ev.target.value)||8));render();}});
   $("rotation").addEventListener("input",ev=>{const i=selectedItem();if(i){i.rotation=Number(ev.target.value);$("rotationValue").value=i.rotation+"°";render();}});
   $("duplicateBtn").addEventListener("click",()=>{const i=selectedItem();if(!i){toast("Select a component first");return;}const copy={...i,id:state.nextId++,name:i.name+" copy",x:Math.min(420-i.w,i.x+18),y:Math.min(620-i.h,i.y+18),layer:Math.max(...state.items.map(n=>n.layer))+1};state.items.push(copy);selectItem(copy.id);render();toast("Component duplicated");});
   $("deleteBtn").addEventListener("click",()=>{if(!state.selected){toast("Select a component first");return;}state.items=state.items.filter(i=>i.id!==state.selected);state.selected=null;render();toast("Component removed");});
