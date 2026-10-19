@@ -145,13 +145,7 @@
         shape.setAttribute("stroke","#111827");
       }
       if (item.type === "camera") {
-        shape.setAttribute("stroke","#aab4c3"); shape.setAttribute("stroke-width","2");
-        shape.setAttribute("fill",item.color);
-        shape.setAttribute("filter","drop-shadow(1px 3px 2px #0008)");
-        const cx=item.x+item.w/2, cy=item.y+item.h/2;
-        shape.setAttribute("rx",Math.min(item.radius||18, item.w*.28, item.h*.2));
-        const rim=el("rect",{x:item.x+2,y:item.y+2,width:item.w-4,height:item.h-4,rx:Math.max(5,(item.radius||18)-3),fill:"none",stroke:"#ffffff35","stroke-width":1});
-        group.appendChild(shape); group.appendChild(rim);
+        // Camera module background intentionally omitted; individual lens and flash components remain.
         return group;
       }
     }
