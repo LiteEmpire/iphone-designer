@@ -59,6 +59,26 @@
     return item;
   }
   function addItem(type) {
+    const uniqueTypes = ["nc","motherboard","cpu","gpu","ram","ssd"];
+    const existing = state.items.some(item => item.type === type);
+    if (uniqueTypes.includes(type) && existing) {
+      toast("Only one " + (type === "nc" ? "chassis" : type === "motherboard" ? "motherboard" : type.toUpperCase()) + " is allowed");
+      return;
+    }
+    if (["battery","batteryMax"].includes(type) && state.items.some(item => ["battery","batteryMax"].includes(item.type))) {
+      toast("Only one battery can be installed");
+      return;
+    }
+    const hasChassis = state.items.some(item => item.type === "nc");
+    const hasMotherboard = state.items.some(item => item.type === "motherboard");
+    if (type === "motherboard" && !hasChassis) {
+      toast("Add the Nova Chassis before installing the motherboard");
+      return;
+    }
+    if (["battery","batteryMax","cpu","gpu","ram","ssd"].includes(type) && (!hasChassis || !hasMotherboard)) {
+      toast("Add the Nova Chassis and motherboard before installing internal components");
+      return;
+    }
     const item = makeItem(type);
     state.items.push(item);
     if (item.view !== "both" && item.view !== state.view) {
@@ -140,8 +160,12 @@
           shape.appendChild(el("rect",{x:socket.x+socket.w-4.5,y:py,width:3,height:2,rx:0.7,fill:"#e6c66f"}));
         }
       });
-      const mt = el("text",{x:item.x+item.w/2,y:item.y+item.h-14,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":9,"font-weight":"700",fill:"#f0fdf4"}); mt.textContent="MOTHERBOARD"; shape.appendChild(mt);
-      const mc = el("text",{x:item.x+item.w/2,y:item.y+item.h-3,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":8,fill:"#d1fae5"}); mc.textContent="NMB1"; shape.appendChild(mc);
+      // Dedicated battery power connector, shown on the motherboard's lower edge.
+      const bpX=item.x+item.w/2-17, bpY=item.y+item.h-17;
+      shape.appendChild(el("rect",{x:bpX,y:bpY,width:34,height:9,rx:2,fill:"#111b18",stroke:"#f2c66d","stroke-width":1.4}));
+      for(let pin=0;pin<5;pin++) shape.appendChild(el("rect",{x:bpX+4+pin*6,y:bpY+2,width:3,height:5,rx:0.5,fill:"#f2c66d"}));
+      const bpT=el("text",{x:item.x+item.w/2,y:item.y+item.h-21,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":6,"font-weight":"700",fill:"#fef3c7"}); bpT.textContent="BATTERY PORT"; shape.appendChild(bpT);
+      const mt = el("text",{x:item.x+item.w/2,y:item.y+item.h-7,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":7,"font-weight":"700",fill:"#f0fdf4"}); mt.textContent="NMB1"; shape.appendChild(mt);
     } else if (["cpu","gpu","ram","ssd"].includes(item.type)) {
       shape = el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||8,fill:item.color,stroke:"#ffffff99","stroke-width":1.5});
     } else if (item.type === "logo") {
