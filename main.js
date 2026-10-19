@@ -125,10 +125,17 @@
       shape = el("text", { x: item.x + item.w/2, y: item.y + item.h*.72, "text-anchor":"middle", "font-family":"Space Grotesk, sans-serif", "font-size":Math.max(12,item.w*.65), "font-weight":"700", fill:item.color });
       shape.textContent = "N";
     } else if (item.type === "lens" || item.type === "frontCamera") {
+      // Realistic camera optics: machined metal bezel, concentric lens rings,
+      // deep blue-purple coated glass, and a small reflected highlight.
       shape = el("g");
-      shape.appendChild(el("circle", {cx:item.x+item.w/2,cy:item.y+item.h/2,r:Math.min(item.w,item.h)*.49,fill:item.color,stroke:"#8792a5","stroke-width":2}));
-      shape.appendChild(el("circle", {cx:item.x+item.w/2,cy:item.y+item.h/2,r:Math.min(item.w,item.h)*.29,fill:"#263c5a",stroke:"#617da5","stroke-width":2}));
-      shape.appendChild(el("circle", {cx:item.x+item.w*.39,cy:item.y+item.h*.35,r:Math.min(item.w,item.h)*.09,fill:"#dbeafe","fill-opacity":.8}));
+      const cx=item.x+item.w/2, cy=item.y+item.h/2, r=Math.min(item.w,item.h)*.49;
+      shape.appendChild(el("circle",{cx,cy,r,fill:"#11151d",stroke:"#c2cad5","stroke-width":Math.max(1.2,r*.12)}));
+      shape.appendChild(el("circle",{cx,cy,r:r*.83,fill:"#242b38",stroke:"#596779","stroke-width":Math.max(1,r*.07)}));
+      shape.appendChild(el("circle",{cx,cy,r:r*.68,fill:"#080d18",stroke:"#101a2b","stroke-width":Math.max(1,r*.06)}));
+      shape.appendChild(el("circle",{cx,cy,r:r*.53,fill:"#102746",stroke:"#31537b","stroke-width":Math.max(.8,r*.07)}));
+      shape.appendChild(el("circle",{cx:cx-r*.13,cy:cy-r*.16,r:r*.28,fill:"#2b6da1","fill-opacity":.72}));
+      shape.appendChild(el("circle",{cx:cx-r*.19,cy:cy-r*.23,r:r*.12,fill:"#e5f4ff","fill-opacity":.9}));
+      shape.appendChild(el("path",{d:`M ${cx-r*.48} ${cy+r*.38} Q ${cx} ${cy+r*.65} ${cx+r*.42} ${cy+r*.28}`,fill:"none",stroke:"#7ca8dc","stroke-opacity":.65,"stroke-width":Math.max(.7,r*.07)}));
     } else if (item.type === "flash") {
       shape = el("circle", {cx:item.x+item.w/2,cy:item.y+item.h/2,r:Math.min(item.w,item.h)/2,fill:item.color,stroke:"#b6bbc5","stroke-width":1.5});
     } else {
@@ -138,7 +145,14 @@
         shape.setAttribute("stroke","#111827");
       }
       if (item.type === "camera") {
-        shape.setAttribute("stroke","#555e6e"); shape.setAttribute("stroke-width","1.5");
+        shape.setAttribute("stroke","#aab4c3"); shape.setAttribute("stroke-width","2");
+        shape.setAttribute("fill",item.color);
+        shape.setAttribute("filter","drop-shadow(1px 3px 2px #0008)");
+        const cx=item.x+item.w/2, cy=item.y+item.h/2;
+        shape.setAttribute("rx",Math.min(item.radius||18, item.w*.28, item.h*.2));
+        const rim=el("rect",{x:item.x+2,y:item.y+2,width:item.w-4,height:item.h-4,rx:Math.max(5,(item.radius||18)-3),fill:"none",stroke:"#ffffff35","stroke-width":1});
+        group.appendChild(shape); group.appendChild(rim);
+        return group;
       }
     }
     group.appendChild(shape);
