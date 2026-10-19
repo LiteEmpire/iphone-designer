@@ -250,28 +250,6 @@
     $("canvasTitle").textContent = "Horizon · " + (viewNames[state.view] || "Rear design");
     $("dropHint").classList.toggle("hidden", state.items.some(i => isVisibleInView(i)));
     $("componentCount").textContent = state.items.length;
-    updateDesignPreview();
-  }
-  let previewSide = "exterior";
-  function updateDesignPreview() {
-    const savedView = state.view, savedSelection = state.selected;
-    const sorted = [...state.items].sort((a,b)=>a.layer-b.layer);
-    [["rear","exteriorPreviewSvg"],["inside","interiorPreviewSvg"]].forEach(([view,id])=>{
-      state.view=view; state.selected=null;
-      const preview=$(id); preview.replaceChildren();
-      sorted.filter(item=>isVisibleInView(item)).forEach(item=>preview.appendChild(shapeFor(item)));
-    });
-    state.view=savedView; state.selected=savedSelection;
-  }
-  let previewRotationY=-12, previewRotationX=0, previewDrag=null;
-  function applyPreviewRotation(){["exteriorPreviewSvg","interiorPreviewSvg"].forEach(id=>{const svg=$(id);svg.style.transform="perspective(900px) rotateX("+previewRotationX+"deg) rotateY("+previewRotationY+"deg)";});}
-  function rotatePreview(delta){previewRotationY=((previewRotationY+delta+180)%360+360)%360-180;applyPreviewRotation();}
-  function setPreviewSide(side) {
-    previewSide=side;
-    const exterior=side==="exterior";
-    $("previewExterior").hidden=!exterior; $("previewInterior").hidden=exterior;
-    $("previewExteriorBtn").classList.toggle("active",exterior); $("previewInteriorBtn").classList.toggle("active",!exterior);
-    $("previewExteriorBtn").setAttribute("aria-selected",String(exterior)); $("previewInteriorBtn").setAttribute("aria-selected",String(!exterior));
   }
   function isVisibleInView(item) {
     // Older saved designs do not have a view property; infer their original component side.
@@ -517,13 +495,6 @@
   $("deleteBtn").addEventListener("click",()=>{if(!state.selected){toast("Select a component first");return;}state.items=state.items.filter(i=>i.id!==state.selected);state.selected=null;render();toast("Component removed");});
   $("bringFrontBtn").addEventListener("click",()=>reorder(state.selected,"front"));
   $("sendBackBtn").addEventListener("click",()=>reorder(state.selected,"back"));
-  $("previewRotateLeft").addEventListener("click",()=>rotatePreview(-25));
-  $("previewRotateRight").addEventListener("click",()=>rotatePreview(25));
-  $("previewRotateReset").addEventListener("click",()=>{previewRotationY=-12;previewRotationX=0;applyPreviewRotation();});
-  ["exteriorPreviewSvg","interiorPreviewSvg"].forEach(id=>{const svg=$(id);svg.style.transformOrigin="50% 50%";svg.style.transformStyle="preserve-3d";svg.addEventListener("pointerdown",ev=>{if(ev.button!==0)return;previewDrag={x:ev.clientX,y:ev.clientY,rotY:previewRotationY,rotX:previewRotationX,id};svg.setPointerCapture?.(ev.pointerId);svg.classList.add("is-rotating");});svg.addEventListener("pointermove",ev=>{if(!previewDrag||previewDrag.id!==id)return;previewRotationY=previewDrag.rotY+(ev.clientX-previewDrag.x)*.7;previewRotationX=Math.max(-22,Math.min(22,previewDrag.rotX-(ev.clientY-previewDrag.y)*.35));applyPreviewRotation();});const stop=()=>{previewDrag=null;svg.classList.remove("is-rotating");};svg.addEventListener("pointerup",stop);svg.addEventListener("pointercancel",stop);svg.addEventListener("lostpointercapture",stop);});
-  applyPreviewRotation();
-  $("previewExteriorBtn").addEventListener("click",()=>setPreviewSide("exterior"));
-  $("previewInteriorBtn").addEventListener("click",()=>setPreviewSide("interior"));
   $("rearViewBtn").addEventListener("click",()=>switchView("rear"));
   $("frontViewBtn").addEventListener("click",()=>switchView("front"));
   $("internalViewBtn").addEventListener("click",()=>switchView("inside"));
