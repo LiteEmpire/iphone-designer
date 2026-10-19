@@ -75,3 +75,5 @@ body[data-theme="dark"] .saved-empty,body[data-theme="dark"] footer,body[data-th
 body[data-theme="dark"] .canvas-instructions{background:#202632;color:#c7cfdd}
 body[data-theme="dark"] .settings-panel{background:#1a1f29}
 @media(max-width:600px){.settings-panel{margin:0 12px 14px;padding:15px}.setting-row{align-items:flex-start;flex-direction:column;gap:12px}}
+
+.intro-concepts{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}.intro-concepts .intro-chip{min-width:205px;flex:1}@media(max-width:760px){.intro-concepts{width:100%}.intro-concepts .intro-chip{min-width:0;flex:1}}@media(max-width:480px){.intro-concepts{flex-direction:column}.intro-concepts .intro-chip{width:100%}}
