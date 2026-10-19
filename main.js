@@ -68,8 +68,6 @@
       // not painted-on rectangles. Layout is a conceptual smartphone midframe.
       const x=item.x, y=item.y, w=item.w, h=item.h;
       const holes = [
-        // Rear camera cluster at the upper-left.
-        `M ${x+12} ${y+12} h 62 a 8 8 0 0 1 8 8 v 78 a 8 8 0 0 1 -8 8 h -62 a 8 8 0 0 1 -8 -8 v -78 a 8 8 0 0 1 8 -8 Z`,
         // Main-board/chip area.
         `M ${x+91} ${y+20} h 105 a 7 7 0 0 1 7 7 v 175 a 7 7 0 0 1 -7 7 h -105 a 7 7 0 0 1 -7 -7 v -175 a 7 7 0 0 1 7 -7 Z`,
         // Battery cavity.
@@ -88,7 +86,6 @@
       // Bay labels sit on the chassis rails OUTSIDE the cutouts, so installed
       // components cannot cover them. Each label has a dark plaque for contrast.
       const portLabels = [
-        {text:"CAMERA", x:x+43, y:y+8, width:48},
         {text:"MOTHERBOARD BAY", x:x+146, y:y+15, width:88},
         {text:"BATTERY BAY", x:x+53, y:y+138, width:68},
         {text:"LOWER BOARD", x:x+146, y:y+303, width:72},
