@@ -71,6 +71,20 @@
   function shapeFor(item) {
     const group = el("g", { "data-id": item.id, transform: `rotate(${item.rotation} ${item.x + item.w/2} ${item.y + item.h/2})`, cursor: "move" });
     let shape;
+    if ((state.view === "top" || state.view === "bottom") && item.type === "body") {
+      const edgeY = state.view === "top" ? 285 : 285;
+      const edgeX = 90, edgeW = 240, edgeH = 34;
+      const edge = el("rect",{x:edgeX,y:edgeY,width:edgeW,height:edgeH,rx:14,fill:item.color,stroke:"#7f8999","stroke-width":2});
+      group.appendChild(edge);
+      group.appendChild(el("rect",{x:edgeX+10,y:edgeY+5,width:edgeW-20,height:edgeH-10,rx:9,fill:"none",stroke:"#ffffff88","stroke-width":1}));
+      if (state.view === "bottom") {
+        group.appendChild(el("rect",{x:edgeX+edgeW/2-28,y:edgeY+5,width:56,height:edgeH-10,rx:4,fill:"#171c25",stroke:"#b8c1ce","stroke-width":1.5}));
+        for(let p=0;p<5;p++) group.appendChild(el("circle",{cx:edgeX+edgeW/2-48+p*12,cy:edgeY+edgeH/2,r:1.8,fill:"#202632"}));
+      } else {
+        group.appendChild(el("circle",{cx:edgeX+edgeW/2,cy:edgeY+edgeH/2,r:5,fill:"#111827",stroke:"#b8c1ce","stroke-width":1.5}));
+      }
+      return group;
+    }
     if (item.type === "nc") {
       shape = el("g");
       // Compound even-odd path: the interior subpaths are real transparent cutouts,
@@ -141,6 +155,20 @@
     } else {
       const radius = item.type === "body" ? Math.min(item.w,item.h)*.16 : Math.min(item.radius || 8,item.w/2,item.h/2);
       shape = el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:radius,fill:item.color,stroke:item.type==="body"?"#9ca5b4":"#ffffff55","stroke-width":item.type==="body"?2:1});
+      if (item.material === "aluminium" || item.material === "titanium") {
+        shape.setAttribute("stroke", item.material === "titanium" ? "#d8dee8" : "#aeb8c6");
+        shape.setAttribute("stroke-width", "3");
+      } else if (item.material === "glass" || item.material === "glossy") {
+        shape.setAttribute("stroke", "#ffffffcc");
+        shape.setAttribute("stroke-width", "2");
+        shape.setAttribute("fill-opacity", item.material === "glass" ? "0.78" : "0.94");
+      } else if (item.material === "matte" || item.material === "rubber") {
+        shape.setAttribute("stroke", "#00000044");
+        shape.setAttribute("stroke-width", "1.5");
+      } else if (item.material === "plastic") {
+        shape.setAttribute("stroke", "#ffffff66");
+        shape.setAttribute("stroke-width", "1.5");
+      }
       if (item.type === "screen") {
         shape.setAttribute("stroke","#111827");
       }
@@ -188,7 +216,8 @@
     });
     updateProperties();
     $("selectionLabel").textContent = selectedItem() ? selectedItem().name + " selected" : "No component selected";
-    $("canvasTitle").textContent = "Horizon · " + (state.view === "rear" ? "Rear design" : state.view === "front" ? "Front design" : "Internal layout");
+    const viewNames = {rear:"Rear design",front:"Front design",inside:"Internal layout",top:"Top edge",bottom:"Bottom edge"};
+    $("canvasTitle").textContent = "Horizon · " + (viewNames[state.view] || "Rear design");
     $("dropHint").classList.toggle("hidden", state.items.some(i => isVisibleInView(i)));
     $("componentCount").textContent = state.items.length;
   }
@@ -198,6 +227,7 @@
     // The exterior shell must not cover the chassis in the internal layout.
     // The NC chassis is the base layer; internal parts render above it.
     if (state.view === "inside" && ["body", "button"].includes(item.type)) return false;
+    if (state.view === "top" || state.view === "bottom") return ["body","button"].includes(item.type);
     return side === "both" || side === state.view;
   }
   function selectItem(id) { state.selected = id; updateProperties(); }
@@ -211,6 +241,7 @@
     $("componentName").value = item.name;
     $("componentColor").value = validHex(item.color) ? item.color : "#d9dde5";
     $("hexColor").value = item.color.toUpperCase();
+    $("componentMaterial").value = item.material || "default";
     $("posX").value = Math.round(item.x); $("posY").value = Math.round(item.y);
     const fixedSize = ["nc","battery","motherboard","cpu","gpu","ram","ssd"].includes(item.type);
     $("sizeW").value = Math.round(item.w); $("sizeH").value = Math.round(item.h);
@@ -376,15 +407,17 @@
     // Make the second lens sit beside the first and use a simple, balanced camera layout.
     const lenses=state.items.filter(i=>i.type==="lens"); if(lenses[1]) {lenses[1].x=174;lenses[1].y=124;}
     state.items.forEach((item,index)=>item.layer=index);
-    state.view="rear";state.selected=null;$("rearViewBtn").classList.add("active");$("frontViewBtn").classList.remove("active");$("internalViewBtn").classList.remove("active");$("canvasGrid").classList.remove("hidden");state.grid=true;$("gridBtn").classList.add("active");render();checkpointDesign();
+    state.view="rear";state.selected=null;$("rearViewBtn").classList.add("active");$("frontViewBtn").classList.remove("active");$("internalViewBtn").classList.remove("active");$("topViewBtn").classList.remove("active");$("bottomViewBtn").classList.remove("active");$("canvasGrid").classList.remove("hidden");state.grid=true;$("gridBtn").classList.add("active");render();checkpointDesign();
   }
   function switchView(view) {
-    if (view !== "rear" && view !== "front" && view !== "inside") return;
+    if (!["rear","front","inside","top","bottom"].includes(view)) return;
     state.view = view;
     state.selected = null;
     $("rearViewBtn").classList.toggle("active", view === "rear");
     $("frontViewBtn").classList.toggle("active", view === "front");
     $("internalViewBtn").classList.toggle("active", view === "inside");
+    $("topViewBtn").classList.toggle("active", view === "top");
+    $("bottomViewBtn").classList.toggle("active", view === "bottom");
     render();
   }
   $("mobileNudge").addEventListener("click",ev=>{const btn=ev.target.closest("[data-nudge]");if(!btn)return;const item=selectedItem();if(!item){toast("Select a component first");return;}const step=4;const direction=btn.dataset.nudge;if(direction==="up")item.y=Math.max(0,item.y-step);if(direction==="down")item.y=Math.min(620-item.h,item.y+step);if(direction==="left")item.x=Math.max(0,item.x-step);if(direction==="right")item.x=Math.min(420-item.w,item.x+step);render();});
@@ -398,6 +431,7 @@
   canvasArea.addEventListener("drop",ev=>{ev.preventDefault();canvasArea.classList.remove("drag-over");const type=ev.dataTransfer.getData("text/plain");if(!defaults[type])return;const item=makeItem(type);const point=canvasPoint({clientX:ev.clientX,clientY:ev.clientY});item.x=Math.max(0,Math.min(420-item.w,point.x-item.w/2));item.y=Math.max(0,Math.min(620-item.h,point.y-item.h/2));state.items.push(item);if(item.view!=="both"&&item.view!==state.view){switchView(item.view);state.selected=item.id;render();}else{state.selected=item.id;render();}toast(item.name+" added to frame");});
   $("componentName").addEventListener("input",ev=>{const i=selectedItem();if(i){i.name=ev.target.value||"Component";$("selectionLabel").textContent=i.name+" selected";}});
   $("componentColor").addEventListener("input",ev=>setColor(ev.target.value));
+  $("componentMaterial").addEventListener("change",ev=>{const item=selectedItem();if(!item)return;item.material=ev.target.value;render();});
   $("hexColor").addEventListener("change",ev=>{let v=ev.target.value.trim();if(!v.startsWith("#"))v="#"+v;if(validHex(v))setColor(v);else updateProperties();});
   $("presetColors").addEventListener("click",ev=>{const b=ev.target.closest("[data-color]");if(b)setColor(b.dataset.color);});
   $("posX").addEventListener("change",ev=>{const i=selectedItem();if(i){i.x=Math.max(0,Math.min(420-i.w,Number(ev.target.value)||0));render();}});
@@ -412,6 +446,8 @@
   $("rearViewBtn").addEventListener("click",()=>switchView("rear"));
   $("frontViewBtn").addEventListener("click",()=>switchView("front"));
   $("internalViewBtn").addEventListener("click",()=>switchView("inside"));
+  $("topViewBtn").addEventListener("click",()=>switchView("top"));
+  $("bottomViewBtn").addEventListener("click",()=>switchView("bottom"));
   $("gridBtn").addEventListener("click",()=>{state.grid=!state.grid;$("canvasGrid").classList.toggle("hidden",!state.grid);$("gridBtn").classList.toggle("active",state.grid);$("gridBtn").setAttribute("aria-pressed",String(state.grid));});
   $("saveBtn").addEventListener("click",saveDesign);
   async function updateAccountUI() {
