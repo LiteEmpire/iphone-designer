@@ -326,6 +326,8 @@
     if (!$("specsWorkspace").hidden) renderSpecs();
   }
   function renderSpecs() {
+    const technology = $("displayTechnologyInput");
+    if (technology && document.activeElement !== technology) technology.value = state.specifications.displayTechnology ?? "";
     const refresh = $("refreshRateInput");
     if (refresh && document.activeElement !== refresh) refresh.value = state.specifications.refreshRate ?? "";
     const root = $("cameraSpecsList");
@@ -576,6 +578,7 @@
   $("designerTab").addEventListener("click",()=>showStudioTab("designer"));
   $("specsTab").addEventListener("click",()=>showStudioTab("specs"));
   $("pricingTab").addEventListener("click",()=>showStudioTab("pricing"));
+  $("displayTechnologyInput").addEventListener("change",ev=>{state.specifications.displayTechnology=ev.target.value;});
   $("refreshRateInput").addEventListener("input",ev=>{const value=ev.target.value.trim();state.specifications.refreshRate=value===""?"":Number(value);});
   $("cameraSpecsList").addEventListener("input",ev=>{const input=ev.target.closest("[data-camera-spec-id]");if(!input)return;const id=input.dataset.cameraSpecId;state.specifications.cameraMegapixels=state.specifications.cameraMegapixels||{};const value=input.value.trim();if(value==="")delete state.specifications.cameraMegapixels[id];else state.specifications.cameraMegapixels[id]=Number(value);});
 
