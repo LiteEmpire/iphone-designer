@@ -51,6 +51,19 @@
   const FIXED_TYPES = ["nc","battery","batteryMax","batteryUltra","cpu","cpuPro","gpu","gpuPro","ram","ramPro","ssd","ssdPro"];
   const LOCKED_POSITION_TYPES = [...FIXED_TYPES,"screen"];
   const PHONE_BOUNDS = { x:115, y:85, w:190, h:410 };
+  function syncDisplayToBody(body) {
+    if (!body || body.type !== "body") return;
+    const screen = state.items.find(item => item.type === "screen");
+    if (!screen) return;
+    // Keep the display inset proportional to the phone body, so it grows,
+    // shrinks, and moves with the outer shell instead of staying a fixed size.
+    const insetX = 12 / 190, insetY = 13 / 410;
+    screen.x = body.x + body.w * insetX;
+    screen.y = body.y + body.h * insetY;
+    screen.w = Math.max(8, body.w * (166 / 190));
+    screen.h = Math.max(8, body.h * (384 / 410));
+    screen.radius = Math.max(4, body.w * (25 / 190));
+  }
   function clampToPhone(item) { if (!item || item.type === "body" || item.type === "button") return; item.x=Math.max(PHONE_BOUNDS.x,Math.min(PHONE_BOUNDS.x+PHONE_BOUNDS.w-item.w,item.x)); item.y=Math.max(PHONE_BOUNDS.y,Math.min(PHONE_BOUNDS.y+PHONE_BOUNDS.h-item.h,item.y)); }
   function makeItem(type, overrides = {}) {
     const d = defaults[type] || defaults.detail;
@@ -386,6 +399,7 @@
       item.y = Math.max(PHONE_BOUNDS.y,Math.min(PHONE_BOUNDS.y+PHONE_BOUNDS.h-item.h,pointer.y+dy));
       if (item.type === "motherboard") { const sx=item.x-pointer.x, sy=item.y-pointer.y; INNER_TYPES.forEach(type=>state.items.filter(part=>part.type===type && (part.parentId===item.id || part.parentId==null)).forEach(part=>{part.parentId=item.id;part.x+=sx;part.y+=sy;})); }
     }
+    if (item.type === "body") syncDisplayToBody(item);
     render();
   }
   function stopPointer() {
