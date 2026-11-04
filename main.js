@@ -533,13 +533,8 @@
     {key:"displayTechnology",label:"Display technology",placeholder:"e.g. AMOLED"},
     {key:"resolution",label:"Resolution",placeholder:"e.g. 1440 × 3200"},
     {key:"refreshRate",label:"Refresh rate",placeholder:"e.g. 120 Hz"},
-    {key:"chipset",label:"Processor / chipset",placeholder:"e.g. Nova N1"},
-    {key:"gpu",label:"Graphics processor",placeholder:"e.g. Nova NG1"},
-    {key:"ram",label:"RAM",placeholder:"e.g. 12 GB"},
-    {key:"storage",label:"Storage",placeholder:"e.g. 256 GB"},
     {key:"rearCamera",label:"Rear camera system",placeholder:"e.g. 50 MP + 12 MP + 8 MP"},
     {key:"frontCamera",label:"Front camera",placeholder:"e.g. 32 MP"},
-    {key:"battery",label:"Battery capacity",placeholder:"e.g. 6,000 mAh"},
     {key:"charging",label:"Charging",placeholder:"e.g. 80 W wired"},
     {key:"operatingSystem",label:"Operating system",placeholder:"e.g. NovaOS 1"},
     {key:"connectivity",label:"Connectivity",placeholder:"e.g. 5G, Wi-Fi 7, Bluetooth 6"}
