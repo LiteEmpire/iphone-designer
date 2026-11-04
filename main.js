@@ -120,7 +120,7 @@
       // Compound even-odd path: the interior subpaths are real transparent cutouts,
       // not painted-on rectangles. Layout is a conceptual smartphone midframe.
       const x=item.x, y=item.y, w=item.w, h=item.h;
-      const insideParts = state.items.filter(part => ["motherboard","battery","batteryMax"].includes(part.type));
+      const insideParts = state.items.filter(part => ["motherboard","battery","batteryMax","batteryUltra"].includes(part.type));
       const holes = insideParts.map(part => {
         const px = part.x, py = part.y, pw = part.w, ph = part.h;
         const radius = Math.max(2, Math.min(part.radius || 7, pw/2, ph/2));
