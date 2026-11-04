@@ -12,6 +12,7 @@ A browser-based concept editor for designing **Nova Horizon**, the first fiction
 - Toggle the canvas grid and switch between front/rear concept views.
 - Save multiple concepts in browser local storage and reopen or delete them.
 - Assign a price and currency to each saved concept; pricing is saved locally or synced with the signed-in account.
+- Add technical specifications to each saved concept, including display, chipset, graphics, RAM, storage, cameras, battery, charging, operating system, and connectivity.
 - Export the current design as an SVG file.
 - Responsive layout for desktop, tablet, and mobile screens.
 
@@ -29,5 +30,5 @@ Open `index.html` in a modern browser, or use a local static server. No build st
 ## Notes
 
 - This is a fictional design playground, not a manufacturing CAD tool.
-- Saved concepts stay in the current browser and are not synced across devices.
+- Signed-out concepts are stored in the current browser. When signed in with Google, saved concepts, prices, and specifications are stored in the user's account and can be accessed across devices.
 - Exported SVG files preserve the editable vector shapes.
