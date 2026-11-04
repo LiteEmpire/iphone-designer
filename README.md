@@ -11,6 +11,7 @@ A browser-based concept editor for designing **Nova Horizon**, the first fiction
 - Use a colour picker, hex input, and quick colour swatches.
 - Toggle the canvas grid and switch between front/rear concept views.
 - Save multiple concepts in browser local storage and reopen or delete them.
+- Assign a price and currency to each saved concept; pricing is saved locally or synced with the signed-in account.
 - Export the current design as an SVG file.
 - Responsive layout for desktop, tablet, and mobile screens.
 
