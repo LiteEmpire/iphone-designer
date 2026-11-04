@@ -653,6 +653,10 @@
       const item = selectedItem();
       if(!item) return;
       ev.preventDefault();
+      if(LOCKED_POSITION_TYPES.includes(item.type) || item.type === "motherboard"){
+        toast("Internal components are fixed in their slots");
+        return;
+      }
       const step = ev.shiftKey ? 10 : 1;
       const freeCanvas = item.type === "body" || item.type === "button";
       const minX = freeCanvas ? 0 : PHONE_BOUNDS.x;
