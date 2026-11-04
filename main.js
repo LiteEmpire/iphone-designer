@@ -12,6 +12,7 @@
     nc: { name: "Nova Chassis · NC", x: 95, y: 115, w: 230, h: 390, color: "#8b96a8", radius: 22, layer: 0 },
     battery: { name: "Battery · NB1 · 6,000 mAh", x: 119, y: 270, w: 54, h: 130, color: "#354657", radius: 8, layer: 5 },
     batteryMax: { name: "Nova Battery · NB3 · 7,500 mAh", x: 119, y: 270, w: 54, h: 130, color: "#1f5a43", radius: 8, layer: 5 },
+    batteryUltra: { name: "Nova Battery · NB5 · 9,000 mAh", x: 119, y: 270, w: 54, h: 130, color: "#166b78", radius: 8, layer: 5 },
     motherboard: { name: "Motherboard · NMB1", x: 190, y: 145, w: 100, h: 185, color: "#244b3a", radius: 7, layer: 6 },
     cpu: { name: "Nova CPU · N1", x: 196, y: 150, w: 86, h: 42, color: "#4b638c", radius: 8, layer: 8 },
     gpu: { name: "Nova GPU · NG1", x: 196, y: 198, w: 86, h: 42, color: "#536b56", radius: 8, layer: 9 },
@@ -41,14 +42,14 @@
     const el = $("toast"); el.textContent = message; el.classList.add("show");
     clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 2200);
   }
-  const INNER_TYPES = ["cpu","gpu","ram","ssd"];
-  const FIXED_TYPES = ["nc","battery","batteryMax","cpu","gpu","ram","ssd"];
+  const INNER_TYPES = ["cpu","cpuPro","gpu","gpuPro","ram","ramPro","ssd","ssdPro"];
+  const FIXED_TYPES = ["nc","battery","batteryMax","batteryUltra","cpu","cpuPro","gpu","gpuPro","ram","ramPro","ssd","ssdPro"];
   const LOCKED_POSITION_TYPES = [...FIXED_TYPES,"screen"];
   const PHONE_BOUNDS = { x:115, y:85, w:190, h:410 };
   function clampToPhone(item) { if (!item || item.type === "body" || item.type === "button") return; item.x=Math.max(PHONE_BOUNDS.x,Math.min(PHONE_BOUNDS.x+PHONE_BOUNDS.w-item.w,item.x)); item.y=Math.max(PHONE_BOUNDS.y,Math.min(PHONE_BOUNDS.y+PHONE_BOUNDS.h-item.h,item.y)); }
   function makeItem(type, overrides = {}) {
     const d = defaults[type] || defaults.detail;
-    const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" || type === "frontCamera" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : ["nc", "battery", "batteryMax", "motherboard", "cpu", "gpu", "ram", "ssd"].includes(type) ? "inside" : state.view;
+    const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" || type === "frontCamera" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : ["nc", "battery", "batteryMax", "batteryUltra", "motherboard", "cpu", "cpuPro", "gpu", "gpuPro", "ram", "ramPro", "ssd", "ssdPro"].includes(type) ? "inside" : state.view;
     const parentBoard = INNER_TYPES.includes(type) ? state.items.find(i=>i.type==="motherboard") : null;
     const item = { id: state.nextId++, type, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h, color: d.color, radius: d.radius || 0, rotation: 0, layer: type === "nc" ? -1 : state.items.length, view: defaultView, ...(parentBoard ? {parentId:parentBoard.id} : {}), ...overrides };
     if (type === "lens" && state.items.some(i => i.type === "lens")) {
@@ -59,13 +60,13 @@
     return item;
   }
   function addItem(type) {
-    const uniqueTypes = ["nc","motherboard","cpu","gpu","ram","ssd"];
+    const uniqueTypes = ["nc","motherboard","cpu","cpuPro","gpu","gpuPro","ram","ramPro","ssd","ssdPro"];
     const existing = state.items.some(item => item.type === type);
     if (uniqueTypes.includes(type) && existing) {
       toast("Only one " + (type === "nc" ? "chassis" : type === "motherboard" ? "motherboard" : type.toUpperCase()) + " is allowed");
       return;
     }
-    if (["battery","batteryMax"].includes(type) && state.items.some(item => ["battery","batteryMax"].includes(item.type))) {
+    if (["battery","batteryMax","batteryUltra"].includes(type) && state.items.some(item => ["battery","batteryMax","batteryUltra"].includes(item.type))) {
       toast("Only one battery can be installed");
       return;
     }
@@ -75,7 +76,7 @@
       toast("Add the Nova Chassis before installing the motherboard");
       return;
     }
-    if (["battery","batteryMax","cpu","gpu","ram","ssd"].includes(type) && (!hasChassis || !hasMotherboard)) {
+    if (["battery","batteryMax","batteryUltra","cpu","cpuPro","gpu","gpuPro","ram","ramPro","ssd","ssdPro"].includes(type) && (!hasChassis || !hasMotherboard)) {
       toast("Add the Nova Chassis and motherboard before installing internal components");
       return;
     }
@@ -134,12 +135,12 @@
       });
       // Small rail details make the frame look machined rather than like a plain plate.
       shape.appendChild(el("path",{d:`M ${x+83} ${y+22} v 100 M ${x+83} ${y+140} v 150`,fill:"none",stroke:"#d8dee8","stroke-width":2,"stroke-linecap":"round"}));
-    } else if (item.type === "battery" || item.type === "batteryMax") {
+    } else if (["battery","batteryMax","batteryUltra"].includes(item.type)) {
       shape = el("g");
       shape.appendChild(el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||8,fill:item.color,stroke:"#b9c6d3","stroke-width":2}));
       shape.appendChild(el("rect", {x:item.x+item.w*.36,y:item.y-4,width:item.w*.28,height:5,rx:2,fill:"#cbd5e1"}));
       const bt = el("text",{x:item.x+item.w/2,y:item.y+item.h/2-4,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":10,"font-weight":"700",fill:"#ffffff"}); bt.textContent="BATTERY"; shape.appendChild(bt);
-      const bc = el("text",{x:item.x+item.w/2,y:item.y+item.h/2+11,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":9,fill:"#dbeafe"}); bc.textContent=item.type === "batteryMax" ? "NB3 · 7500 mAh" : "NB1 · 6000 mAh"; shape.appendChild(bc);
+      const bc = el("text",{x:item.x+item.w/2,y:item.y+item.h/2+11,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":9,fill:"#dbeafe"}); bc.textContent=item.type === "batteryUltra" ? "NB5 · 9000 mAh" : item.type === "batteryMax" ? "NB3 · 7500 mAh" : "NB1 · 6000 mAh"; shape.appendChild(bc);
     } else if (item.type === "motherboard") {
       shape = el("g");
       shape.appendChild(el("rect",{x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||7,fill:item.color,stroke:"#8cb8a1","stroke-width":2}));
@@ -222,9 +223,9 @@
       group.appendChild(el("rect", { x:item.x, y:item.y, width:item.w, height:item.h, rx:Math.min(item.w,item.h)*.16, fill:"none", stroke:"#9ca5b4", "stroke-width":2, "pointer-events":"none" }));
     }
     if (["cpu","gpu","ram","ssd"].includes(item.type)) {
-      const code = ({cpu:"N1",gpu:"NG1",ram:"NR1",ssd:"NS1"})[item.type];
+      const code = ({cpu:"N1",cpuPro:"N2",gpu:"NG1",gpuPro:"NG2",ram:"NR1",ramPro:"NR2",ssd:"NS1",ssdPro:"NS2"})[item.type];
       const chipText = el("text",{x:item.x+item.w/2,y:item.y+item.h*.43,"text-anchor":"middle","font-family":"Space Grotesk, sans-serif","font-size":Math.max(10,Math.min(16,item.w*.12)),"font-weight":"700",fill:"#ffffff"}); chipText.textContent=code; group.appendChild(chipText);
-      const label = el("text",{x:item.x+item.w/2,y:item.y+item.h*.72,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":Math.max(7,Math.min(10,item.w*.075)),"font-weight":"600",fill:"#ffffffdd"}); label.textContent=({cpu:"CPU",gpu:"GPU",ram:"RAM",ssd:"SSD"})[item.type]; group.appendChild(label);
+      const label = el("text",{x:item.x+item.w/2,y:item.y+item.h*.72,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":Math.max(7,Math.min(10,item.w*.075)),"font-weight":"600",fill:"#ffffffdd"}); label.textContent=({cpu:"CPU",cpuPro:"CPU",gpu:"GPU",gpuPro:"GPU",ram:"RAM",ramPro:"RAM",ssd:"SSD",ssdPro:"SSD"})[item.type]; group.appendChild(label);
     }
     if (item.type === "body") {
       group.appendChild(el("rect",{x:item.x+item.w*.42,y:item.y+item.h-13,width:item.w*.16,height:3,rx:2,fill:"#737d8d","fill-opacity":.55}));
@@ -278,7 +279,7 @@
   }
   function isVisibleInView(item) {
     // Older saved designs do not have a view property; infer their original component side.
-    const side = item.view || (["body", "button"].includes(item.type) ? "both" : item.type === "screen" || item.type === "frontCamera" ? "front" : ["camera", "lens", "flash", "logo"].includes(item.type) ? "rear" : ["nc", "battery", "batteryMax", "motherboard", "cpu", "gpu", "ram", "ssd"].includes(item.type) ? "inside" : "both");
+    const side = item.view || (["body", "button"].includes(item.type) ? "both" : item.type === "screen" || item.type === "frontCamera" ? "front" : ["camera", "lens", "flash", "logo"].includes(item.type) ? "rear" : ["nc", "battery", "batteryMax", "batteryUltra", "motherboard", "cpu", "cpuPro", "gpu", "gpuPro", "ram", "ramPro", "ssd", "ssdPro"].includes(item.type) ? "inside" : "both");
     // The exterior shell must not cover the chassis in the internal layout.
     // The NC chassis is the base layer; internal parts render above it.
     if (state.view === "inside" && ["body", "button"].includes(item.type)) return false;
