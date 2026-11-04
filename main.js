@@ -444,6 +444,7 @@
       const remove=document.createElement("button"); remove.textContent="×"; remove.setAttribute("aria-label","Delete saved design"); remove.addEventListener("click",async()=>{const target=state.saved[index];if(state.user && target.cloudId){const {error}=await supabase.from("designs").delete().eq("id",target.cloudId);if(error){toast("Could not delete design");return;}}state.saved.splice(index,1);persistSaved();renderSaved();});
       card.append(thumb,info,load,update,remove); root.appendChild(card);
     });
+    renderPricing();
   }
   function renderPricing() {
     const root=$("pricingList"); if(!root)return; root.replaceChildren();
