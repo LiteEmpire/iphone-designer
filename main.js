@@ -111,6 +111,7 @@
     }
     const item = makeItem(type);
     state.items.push(item);
+    if (!$("specsWorkspace").hidden) renderSpecs();
     if (item.view !== "both" && item.view !== state.view) {
       state.view = item.view;
       $("rearViewBtn").classList.toggle("active", state.view === "rear");
@@ -322,6 +323,23 @@
     $("canvasTitle").textContent = "Horizon · " + (viewNames[state.view] || "Rear design");
     $("dropHint").classList.toggle("hidden", state.items.some(i => isVisibleInView(i)));
     $("componentCount").textContent = state.items.length;
+    if (!$("specsWorkspace").hidden) renderSpecs();
+  }
+  function renderSpecs() {
+    const refresh = $("refreshRateInput");
+    if (refresh && document.activeElement !== refresh) refresh.value = state.specifications.refreshRate ?? "";
+    const root = $("cameraSpecsList");
+    if (!root) return;
+    root.replaceChildren();
+    const cameras = state.items.filter(item => item.type === "lens").sort((a,b) => a.id-b.id);
+    if (!cameras.length) { const empty=document.createElement("p"); empty.className="specs-empty"; empty.textContent="Add a camera lens in the Designer to configure its resolution here."; root.appendChild(empty); return; }
+    cameras.forEach((camera,index) => {
+      const row=document.createElement("div"); row.className="spec-field camera-spec-field";
+      const label=document.createElement("label"); label.htmlFor="cameraSpec-"+camera.id; label.textContent="Rear camera "+(index+1)+" · "+(camera.name||"Camera lens");
+      const unit=document.createElement("span"); unit.className="spec-unit"; unit.textContent="MP";
+      const input=document.createElement("input"); input.id="cameraSpec-"+camera.id; input.type="number"; input.min="0"; input.step="0.1"; input.inputMode="decimal"; input.placeholder="e.g. 50"; input.value=state.specifications.cameraMegapixels?.[camera.id] ?? ""; input.dataset.cameraSpecId=String(camera.id); input.setAttribute("aria-label","Megapixels for rear camera "+(index+1));
+      row.append(label,input,unit); root.appendChild(row);
+    });
   }
   function isVisibleInView(item) {
     // Older saved designs do not have a view property; infer their original component side.
@@ -431,6 +449,7 @@
     state.items = (data.items || []).map(i=>({...i}));
     const board=state.items.find(i=>i.type==="motherboard"); if(board) state.items.filter(i=>INNER_TYPES.includes(i.type)).forEach(part=>{if(part.parentId==null)part.parentId=board.id;}); state.items.forEach(clampToPhone);
     state.nextId = Math.max(0,...state.items.map(i=>i.id))+1; state.view=data.view||"rear"; state.selected=null;
+    if (!$("specsWorkspace").hidden) renderSpecs();
     $("rearViewBtn").classList.toggle("active",state.view==="rear"); $("frontViewBtn").classList.toggle("active",state.view==="front"); $("internalViewBtn").classList.toggle("active",state.view==="inside"); $("topViewBtn").classList.toggle("active",state.view==="top"); $("bottomViewBtn").classList.toggle("active",state.view==="bottom"); render(); checkpointDesign();
   }
   async function loadSaved() {
@@ -540,18 +559,25 @@
     });
   }
   function showStudioTab(tab) {
-    const pricing=tab==="pricing";
-    $("designerWorkspace").hidden=pricing;
+    const pricing=tab==="pricing", specs=tab==="specs";
+    $("designerWorkspace").hidden=pricing||specs;
     $("pricingWorkspace").hidden=!pricing;
-    $("designerTab").classList.toggle("active",!pricing);
+    $("specsWorkspace").hidden=!specs;
+    $("designerTab").classList.toggle("active",!pricing&&!specs);
+    $("specsTab").classList.toggle("active",specs);
     $("pricingTab").classList.toggle("active",pricing);
-    $("designerTab").setAttribute("aria-selected",String(!pricing));
+    $("designerTab").setAttribute("aria-selected",String(!pricing&&!specs));
+    $("specsTab").setAttribute("aria-selected",String(specs));
     $("pricingTab").setAttribute("aria-selected",String(pricing));
     if(pricing)renderPricing();
+    if(specs)renderSpecs();
   }
 
   $("designerTab").addEventListener("click",()=>showStudioTab("designer"));
+  $("specsTab").addEventListener("click",()=>showStudioTab("specs"));
   $("pricingTab").addEventListener("click",()=>showStudioTab("pricing"));
+  $("refreshRateInput").addEventListener("input",ev=>{const value=ev.target.value.trim();state.specifications.refreshRate=value===""?"":Number(value);});
+  $("cameraSpecsList").addEventListener("input",ev=>{const input=ev.target.closest("[data-camera-spec-id]");if(!input)return;const id=input.dataset.cameraSpecId;state.specifications.cameraMegapixels=state.specifications.cameraMegapixels||{};const value=input.value.trim();if(value==="")delete state.specifications.cameraMegapixels[id];else state.specifications.cameraMegapixels[id]=Number(value);});
 
   async function persistSaved() {
     if (!state.user) { localStorage.setItem("nova-horizon-designs",JSON.stringify(state.saved)); renderSaved(); return; }
@@ -572,7 +598,7 @@
     // Make the second lens sit beside the first and use a simple, balanced camera layout.
     const lenses=state.items.filter(i=>i.type==="lens"); if(lenses[1]) {lenses[1].x=174;lenses[1].y=124;}
     state.items.forEach((item,index)=>item.layer=index);
-    state.view="rear";state.selected=null;$("rearViewBtn").classList.add("active");$("frontViewBtn").classList.remove("active");$("internalViewBtn").classList.remove("active");$("topViewBtn").classList.remove("active");$("bottomViewBtn").classList.remove("active");$("canvasGrid").classList.remove("hidden");state.grid=true;$("gridBtn").classList.add("active");render();checkpointDesign();
+    state.view="rear";state.selected=null;$("rearViewBtn").classList.add("active");$("frontViewBtn").classList.remove("active");$("internalViewBtn").classList.remove("active");$("topViewBtn").classList.remove("active");$("bottomViewBtn").classList.remove("active");$("canvasGrid").classList.remove("hidden");state.grid=true;$("gridBtn").classList.add("active");render();renderSpecs();checkpointDesign();
   }
   function switchView(view) {
     if (!["rear","front","inside","top","bottom"].includes(view)) return;
@@ -673,7 +699,7 @@
   }
   function deleteSelected(){
     if(!state.selected){toast("Select a component first");return;}
-    state.items=state.items.filter(i=>i.id!==state.selected);state.selected=null;render();toast("Component removed");
+    const removed=selectedItem();state.items=state.items.filter(i=>i.id!==state.selected);if(removed?.type==="lens"&&state.specifications.cameraMegapixels)delete state.specifications.cameraMegapixels[removed.id];state.selected=null;render();toast("Component removed");
   }
   $("duplicateBtn").addEventListener("click",duplicateSelected);
   $("deleteBtn").addEventListener("click",deleteSelected);
