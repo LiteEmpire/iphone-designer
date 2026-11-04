@@ -452,7 +452,7 @@
   function renderSaved() {
     $("savedCount").textContent = state.saved.length;
     const root = $("savedDesigns"); root.replaceChildren();
-    if (!state.saved.length) { const empty=document.createElement("div"); empty.className="saved-empty"; empty.textContent="Your saved Horizon concepts will appear here."; root.appendChild(empty); renderPricing(); renderSpecifications(); return; }
+    if (!state.saved.length) { const empty=document.createElement("div"); empty.className="saved-empty"; empty.textContent="Your saved Horizon concepts will appear here."; root.appendChild(empty); renderPricing(); return; }
     state.saved.forEach((d,index)=>{
       const card=document.createElement("div"); card.className="saved-card";
       const thumb=document.createElement("div"); thumb.className="saved-thumb";
@@ -528,75 +528,17 @@
       row.append(info,amount,currency,save);root.appendChild(row);
     });
   }
-  const SPEC_FIELDS=[
-    {key:"display",label:"Display size",placeholder:"e.g. 6.7 inches"},
-    {key:"displayTechnology",label:"Display technology",placeholder:"e.g. AMOLED"},
-    {key:"resolution",label:"Resolution",placeholder:"e.g. 1440 × 3200"},
-    {key:"refreshRate",label:"Refresh rate",placeholder:"e.g. 120 Hz"},
-    {key:"rearCamera",label:"Rear camera system",placeholder:"e.g. 50 MP + 12 MP + 8 MP"},
-    {key:"frontCamera",label:"Front camera",placeholder:"e.g. 32 MP"},
-    {key:"charging",label:"Charging",placeholder:"e.g. 80 W wired"},
-    {key:"operatingSystem",label:"Operating system",placeholder:"e.g. NovaOS 1"},
-    {key:"connectivity",label:"Connectivity",placeholder:"e.g. 5G, Wi-Fi 7, Bluetooth 6"}
-  ];
-  function renderSpecifications(){
-    const root=$("specificationsList");if(!root)return;root.replaceChildren();
-    const total=state.saved.filter(d=>SPEC_FIELDS.some(f=>String((d.specifications||{})[f.key]||"").trim())).length;
-    $("specifiedConceptCount").textContent=total;
-    $("specificationsCount").textContent=state.saved.length;
-    if(!state.saved.length){const empty=document.createElement("div");empty.className="saved-empty";empty.textContent="Save a concept first, then add its specifications here.";root.appendChild(empty);return;}
-    state.saved.forEach((design,index)=>{
-      const card=document.createElement("section");card.className="specification-card";
-      const heading=document.createElement("div");heading.className="specification-card-heading";
-      const title=document.createElement("b");title.textContent=design.title||design.name||"Untitled concept";
-      const status=document.createElement("small");status.textContent=SPEC_FIELDS.filter(f=>String((design.specifications||{})[f.key]||"").trim()).length+" of "+SPEC_FIELDS.length+" fields completed";
-      heading.append(title,status);card.appendChild(heading);
-      const grid=document.createElement("div");grid.className="specification-grid";
-      const controls={};
-      SPEC_FIELDS.forEach(field=>{
-        const wrap=document.createElement("label");wrap.className="specification-field";
-        const label=document.createElement("span");label.textContent=field.label;
-        const input=document.createElement("input");input.type="text";input.maxLength=100;input.placeholder=field.placeholder;input.value=(design.specifications||{})[field.key]||"";input.setAttribute("aria-label",field.label+" for "+title.textContent);
-        controls[field.key]=input;wrap.append(label,input);grid.appendChild(wrap);
-      });
-      const actions=document.createElement("div");actions.className="specification-actions";
-      const save=document.createElement("button");save.type="button";save.className="pricing-save";save.textContent="Save specifications";
-      save.addEventListener("click",async()=>{
-        const target=state.saved[index];if(!target)return;
-        const specifications={...(target.specifications||{})};
-        SPEC_FIELDS.forEach(field=>{specifications[field.key]=controls[field.key].value.trim();});
-        const updated={...target,specifications};delete updated.cloudId;
-        if(state.user){
-          if(!target.cloudId){toast("This concept is not linked to your account");return;}
-          save.disabled=true;save.textContent="Saving…";
-          const {error}=await supabase.from("designs").update({design:updated,updated_at:new Date().toISOString()}).eq("id",target.cloudId).eq("user_id",state.user.id);
-          save.disabled=false;save.textContent="Save specifications";
-          if(error){console.error(error);toast("Could not save these specifications");return;}
-        }else{
-          try{const next=[...state.saved];next[index]={...updated};localStorage.setItem("nova-horizon-designs",JSON.stringify(next));}
-          catch(error){console.error(error);toast("Could not save specifications in this browser");return;}
-        }
-        state.saved[index]={...updated,...(target.cloudId?{cloudId:target.cloudId}:{})};
-        if(state.activeConceptTitle===(target.title||target.name))state.specifications={...specifications};
-        renderSaved();render();toast("Specifications saved for "+(target.title||"concept"));
-      });
-      const preview=document.createElement("button");preview.type="button";preview.className="text-button";preview.textContent="Preview on model"; preview.addEventListener("click",()=>{loadDesign(design);showStudioTab("designer");toast("Specifications applied to the model");window.scrollTo({top:0,behavior:"smooth"});}); actions.append(save,preview);card.append(grid,actions);root.appendChild(card);
-    });
-  }
   function showStudioTab(tab) {
-    const pricing=tab==="pricing",specifications=tab==="specifications";
-    $("designerWorkspace").hidden=pricing||specifications;
+    const pricing=tab==="pricing";
+    $("designerWorkspace").hidden=pricing;
     $("pricingWorkspace").hidden=!pricing;
-    $("specificationsWorkspace").hidden=!specifications;
-    $("designerTab").classList.toggle("active",!pricing&&!specifications);
+    $("designerTab").classList.toggle("active",!pricing);
     $("pricingTab").classList.toggle("active",pricing);
-    $("specificationsTab").classList.toggle("active",specifications);
-    $("designerTab").setAttribute("aria-selected",String(!pricing&&!specifications));
+    $("designerTab").setAttribute("aria-selected",String(!pricing));
     $("pricingTab").setAttribute("aria-selected",String(pricing));
-    $("specificationsTab").setAttribute("aria-selected",String(specifications));
     if(pricing)renderPricing();
-    if(specifications)renderSpecifications();
   }
+
   $("designerTab").addEventListener("click",()=>showStudioTab("designer"));
   $("pricingTab").addEventListener("click",()=>showStudioTab("pricing"));
   $("specificationsTab").addEventListener("click",()=>showStudioTab("specifications"));
