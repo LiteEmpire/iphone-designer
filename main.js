@@ -2,7 +2,7 @@
   const $ = (id) => document.getElementById(id);
   const svgNS = "http://www.w3.org/2000/svg";
   const canvas = $("designCanvas");
-  const state = { view: "rear", grid: true, selected: null, nextId: 1, items: [], saved: [], user: null };
+  const state = { view: "rear", grid: true, selected: null, nextId: 1, items: [], saved: [], user: null, specifications: {} };
   const SUPABASE_URL = "https://zvcycttznebsfdzerijj.supabase.co";
   const SUPABASE_KEY = "sb_publishable_n_ojTLFmbI41ZMJOujRArg_Gg1E2tNP";
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -144,7 +144,7 @@
       shape.appendChild(el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||8,fill:item.color,stroke:"#b9c6d3","stroke-width":2}));
       shape.appendChild(el("rect", {x:item.x+item.w*.36,y:item.y-4,width:item.w*.28,height:5,rx:2,fill:"#cbd5e1"}));
       const bt = el("text",{x:item.x+item.w/2,y:item.y+item.h/2-4,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":10,"font-weight":"700",fill:"#ffffff"}); bt.textContent="BATTERY"; shape.appendChild(bt);
-      const bc = el("text",{x:item.x+item.w/2,y:item.y+item.h/2+11,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":9,fill:"#dbeafe"}); bc.textContent=item.type === "batteryUltra" ? "NB5 · 9000 mAh" : item.type === "batteryMax" ? "NB3 · 7500 mAh" : "NB1 · 6000 mAh"; shape.appendChild(bc);
+      const bc = el("text",{x:item.x+item.w/2,y:item.y+item.h/2+11,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":9,fill:"#dbeafe"}); bc.textContent=String(state.specifications.battery||"").trim() || (item.type === "batteryUltra" ? "NB5 · 9000 mAh" : item.type === "batteryMax" ? "NB3 · 7500 mAh" : "NB1 · 6000 mAh"); shape.appendChild(bc);
     } else if (item.type === "motherboard") {
       shape = el("g");
       shape.appendChild(el("rect",{x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||7,fill:item.color,stroke:"#8cb8a1","stroke-width":2}));
@@ -216,6 +216,18 @@
       }
     }
     group.appendChild(shape);
+    if (item.type === "screen") {
+      const specs=state.specifications||{};
+      const displayLine=[specs.display,specs.displayTechnology].filter(Boolean).join(" · ");
+      const detailLine=[specs.resolution,specs.refreshRate].filter(Boolean).join(" · ");
+      if(displayLine||detailLine){
+        const panelY=item.y+item.h*.59;
+        const headline=el("text",{x:item.x+item.w/2,y:panelY,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":Math.max(8,Math.min(12,item.w*.065)),"font-weight":"700",fill:"#f8fafc","pointer-events":"none"});
+        headline.textContent=displayLine.slice(0,34);group.appendChild(headline);
+        const detail=el("text",{x:item.x+item.w/2,y:panelY+15,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":Math.max(6,Math.min(9,item.w*.05)),"font-weight":"500",fill:"#cbd5e1","pointer-events":"none"});
+        detail.textContent=detailLine.slice(0,38);group.appendChild(detail);
+      }
+    }
     if (item.type === "body" && item.imageData) {
       const clipId = `body-image-clip-${item.id}`;
       const defs = el("defs");
@@ -226,10 +238,10 @@
       group.appendChild(el("image", { href:item.imageData, x:item.x, y:item.y, width:item.w, height:item.h, preserveAspectRatio:"xMidYMid slice", "clip-path":`url(#${clipId})`, "pointer-events":"none" }));
       group.appendChild(el("rect", { x:item.x, y:item.y, width:item.w, height:item.h, rx:Math.min(item.w,item.h)*.16, fill:"none", stroke:"#9ca5b4", "stroke-width":2, "pointer-events":"none" }));
     }
-    if (["cpu","gpu","ram","ssd"].includes(item.type)) {
+    if (["cpu","cpuPro","gpu","gpuPro","ram","ramPro","ssd","ssdPro"].includes(item.type)) {
       const code = ({cpu:"N1",cpuPro:"N2",gpu:"NG1",gpuPro:"NG2",ram:"NR1",ramPro:"NR2",ssd:"NS1",ssdPro:"NS2"})[item.type];
       const chipText = el("text",{x:item.x+item.w/2,y:item.y+item.h*.43,"text-anchor":"middle","font-family":"Space Grotesk, sans-serif","font-size":Math.max(10,Math.min(16,item.w*.12)),"font-weight":"700",fill:"#ffffff"}); chipText.textContent=code; group.appendChild(chipText);
-      const label = el("text",{x:item.x+item.w/2,y:item.y+item.h*.72,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":Math.max(7,Math.min(10,item.w*.075)),"font-weight":"600",fill:"#ffffffdd"}); label.textContent=({cpu:"CPU",cpuPro:"CPU",gpu:"GPU",gpuPro:"GPU",ram:"RAM",ramPro:"RAM",ssd:"SSD",ssdPro:"SSD"})[item.type]; group.appendChild(label);
+      const label = el("text",{x:item.x+item.w/2,y:item.y+item.h*.72,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":Math.max(7,Math.min(10,item.w*.075)),"font-weight":"600",fill:"#ffffffdd"}); const specKey=({cpu:"chipset",cpuPro:"chipset",gpu:"gpu",gpuPro:"gpu",ram:"ram",ramPro:"ram",ssd:"storage",ssdPro:"storage"})[item.type]; const specValue=String((state.specifications||{})[specKey]||"").trim(); label.textContent=(specValue||({cpu:"CPU",cpuPro:"CPU",gpu:"GPU",gpuPro:"GPU",ram:"RAM",ramPro:"RAM",ssd:"SSD",ssdPro:"SSD"})[item.type]).slice(0,18); group.appendChild(label);
     }
     if (item.type === "body") {
       group.appendChild(el("rect",{x:item.x+item.w*.42,y:item.y+item.h-13,width:item.w*.16,height:3,rx:2,fill:"#737d8d","fill-opacity":.55}));
@@ -381,8 +393,9 @@
     item.layer = direction === "front" ? Math.max(...layers)+1 : Math.min(...layers)-1;
     render();
   }
-  function serialize() { return {name:"Horizon",view:state.view,items:state.items.map(i=>({...i}))}; }
+  function serialize() { return {name:"Horizon",view:state.view,items:state.items.map(i=>({...i})),specifications:{...(state.specifications||{})}}; }
   function loadDesign(data) {
+    state.specifications={...(data.specifications||{})}; state.activeConceptTitle=data.title||data.name||null;
     state.items = (data.items || []).map(i=>({...i}));
     const board=state.items.find(i=>i.type==="motherboard"); if(board) state.items.filter(i=>INNER_TYPES.includes(i.type)).forEach(part=>{if(part.parentId==null)part.parentId=board.id;}); state.items.forEach(clampToPhone);
     state.nextId = Math.max(0,...state.items.map(i=>i.id))+1; state.view=data.view||"rear"; state.selected=null;
@@ -548,9 +561,10 @@
           catch(error){console.error(error);toast("Could not save specifications in this browser");return;}
         }
         state.saved[index]={...updated,...(target.cloudId?{cloudId:target.cloudId}:{})};
-        renderSaved();toast("Specifications saved for "+(target.title||"concept"));
+        if(state.activeConceptTitle===(target.title||target.name))state.specifications={...specifications};
+        renderSaved();render();toast("Specifications saved for "+(target.title||"concept"));
       });
-      actions.appendChild(save);card.append(grid,actions);root.appendChild(card);
+      const preview=document.createElement("button");preview.type="button";preview.className="text-button";preview.textContent="Preview on model"; preview.addEventListener("click",()=>{loadDesign(design);showStudioTab("designer");toast("Specifications applied to the model");window.scrollTo({top:0,behavior:"smooth"});}); actions.append(save,preview);card.append(grid,actions);root.appendChild(card);
     });
   }
   function showStudioTab(tab) {
@@ -585,7 +599,7 @@
     state.saved.unshift({ ...row.design, cloudId: row.id, title: row.name }); state.saved=state.saved.slice(0,30); renderSaved(); checkpointDesign(); toast("Design saved privately to your account");
   }
   function reset() {
-    state.items=[]; state.nextId=1; initial.forEach(type=>state.items.push(makeItem(type)));
+    state.items=[]; state.specifications={}; state.activeConceptTitle=null; state.nextId=1; initial.forEach(type=>state.items.push(makeItem(type)));
     // Make the second lens sit beside the first and use a simple, balanced camera layout.
     const lenses=state.items.filter(i=>i.type==="lens"); if(lenses[1]) {lenses[1].x=174;lenses[1].y=124;}
     state.items.forEach((item,index)=>item.layer=index);
