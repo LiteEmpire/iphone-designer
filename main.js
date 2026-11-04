@@ -636,6 +636,28 @@
     if(!ev.ctrlKey && ev.key==="Delete"){
       ev.preventDefault();
       deleteSelected();
+      return;
+    }
+    const directions = {
+      ArrowUp: [0, -1],
+      ArrowDown: [0, 1],
+      ArrowLeft: [-1, 0],
+      ArrowRight: [1, 0]
+    };
+    const direction = directions[ev.key];
+    if(direction && !ev.ctrlKey){
+      const item = selectedItem();
+      if(!item) return;
+      ev.preventDefault();
+      const step = ev.shiftKey ? 10 : 1;
+      const freeCanvas = item.type === "body" || item.type === "button";
+      const minX = freeCanvas ? 0 : PHONE_BOUNDS.x;
+      const minY = freeCanvas ? 0 : PHONE_BOUNDS.y;
+      const maxX = freeCanvas ? 420 - item.w : PHONE_BOUNDS.x + PHONE_BOUNDS.w - item.w;
+      const maxY = freeCanvas ? 620 - item.h : PHONE_BOUNDS.y + PHONE_BOUNDS.h - item.h;
+      item.x = Math.max(minX, Math.min(maxX, item.x + direction[0] * step));
+      item.y = Math.max(minY, Math.min(maxY, item.y + direction[1] * step));
+      render();
     }
   });
   canvasArea.addEventListener("dragover",ev=>{ev.preventDefault();canvasArea.classList.add("drag-over");if(ev.dataTransfer)ev.dataTransfer.dropEffect="copy";});
