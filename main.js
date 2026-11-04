@@ -15,9 +15,13 @@
     batteryUltra: { name: "Nova Battery · NB5 · 9,000 mAh", x: 119, y: 270, w: 54, h: 130, color: "#166b78", radius: 8, layer: 5 },
     motherboard: { name: "Motherboard · NMB1", x: 190, y: 145, w: 100, h: 185, color: "#244b3a", radius: 7, layer: 6 },
     cpu: { name: "Nova CPU · N1", x: 196, y: 150, w: 86, h: 42, color: "#4b638c", radius: 8, layer: 8 },
+    cpuPro: { name: "Nova CPU · N2", x: 196, y: 150, w: 86, h: 42, color: "#4b638c", radius: 8, layer: 8 },
     gpu: { name: "Nova GPU · NG1", x: 196, y: 198, w: 86, h: 42, color: "#536b56", radius: 8, layer: 9 },
+    gpuPro: { name: "Nova GPU · NG2", x: 196, y: 198, w: 86, h: 42, color: "#536b56", radius: 8, layer: 9 },
     ram: { name: "Nova RAM · NR1", x: 196, y: 246, w: 86, h: 34, color: "#a77b48", radius: 7, layer: 10 },
+    ramPro: { name: "Nova RAM · NR2", x: 196, y: 246, w: 86, h: 34, color: "#a77b48", radius: 7, layer: 10 },
     ssd: { name: "Nova SSD · NS1", x: 196, y: 285, w: 86, h: 30, color: "#76619c", radius: 7, layer: 11 },
+    ssdPro: { name: "Nova SSD · NS2", x: 196, y: 285, w: 86, h: 30, color: "#76619c", radius: 7, layer: 11 },
     frontCamera: { name: "Front camera", x: 198, y: 102, w: 16, h: 16, color: "#111827", radius: 8, layer: 3 },
     screen: { name: "Display", x: 127, y: 98, w: 166, h: 384, color: "#252b38", radius: 25, layer: 1 },
     camera: { name: "Camera module", x: 132, y: 112, w: 76, h: 94, color: "#343a47", radius: 18, layer: 2 },
@@ -167,7 +171,7 @@
       for(let pin=0;pin<5;pin++) shape.appendChild(el("rect",{x:bpX+4+pin*6,y:bpY+2,width:3,height:5,rx:0.5,fill:"#f2c66d"}));
       const bpT=el("text",{x:item.x+item.w/2,y:item.y+item.h-21,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":6,"font-weight":"700",fill:"#fef3c7"}); bpT.textContent="BATTERY PORT"; shape.appendChild(bpT);
       const mt = el("text",{x:item.x+item.w/2,y:item.y+item.h-7,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":7,"font-weight":"700",fill:"#f0fdf4"}); mt.textContent="NMB1"; shape.appendChild(mt);
-    } else if (["cpu","gpu","ram","ssd"].includes(item.type)) {
+    } else if (["cpu","cpuPro","gpu","gpuPro","ram","ramPro","ssd","ssdPro"].includes(item.type)) {
       shape = el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||8,fill:item.color,stroke:"#ffffff99","stroke-width":1.5});
     } else if (item.type === "logo") {
       shape = el("text", { x: item.x + item.w/2, y: item.y + item.h*.72, "text-anchor":"middle", "font-family":"Space Grotesk, sans-serif", "font-size":Math.max(12,item.w*.65), "font-weight":"700", fill:item.color });
