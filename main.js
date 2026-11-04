@@ -326,6 +326,8 @@
     if (!$("specsWorkspace").hidden) renderSpecs();
   }
   function renderSpecs() {
+    const conceptName = $("specsConceptName");
+    if (conceptName) conceptName.textContent = state.activeConceptTitle || "Unsaved concept";
     const technology = $("displayTechnologyInput");
     if (technology && document.activeElement !== technology) technology.value = state.specifications.displayTechnology ?? "";
     const refresh = $("refreshRateInput");
@@ -594,7 +596,7 @@
     data.title=data.title.trim() || "Horizon concept";
     const { data: row, error } = await supabase.from("designs").insert({ user_id: state.user.id, name: data.title, design: data }).select("id,name,design,created_at").single();
     if (error) { console.error(error); toast("Could not save design. Please try again."); return; }
-    state.saved.unshift({ ...row.design, cloudId: row.id, title: row.name }); state.saved=state.saved.slice(0,30); renderSaved(); checkpointDesign(); toast("Design saved privately to your account");
+    state.activeConceptTitle=row.name; state.saved.unshift({ ...row.design, cloudId: row.id, title: row.name }); state.saved=state.saved.slice(0,30); renderSaved(); renderSpecs(); checkpointDesign(); toast("Design saved privately to your account");
   }
   function reset() {
     state.items=[]; state.specifications={}; state.activeConceptTitle=null; state.nextId=1; initial.forEach(type=>state.items.push(makeItem(type)));
