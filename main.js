@@ -413,7 +413,7 @@
   function renderSaved() {
     $("savedCount").textContent = state.saved.length;
     const root = $("savedDesigns"); root.replaceChildren();
-    if (!state.saved.length) { const empty=document.createElement("div"); empty.className="saved-empty"; empty.textContent="Your saved Horizon concepts will appear here."; root.appendChild(empty); return; }
+    if (!state.saved.length) { const empty=document.createElement("div"); empty.className="saved-empty"; empty.textContent="Your saved Horizon concepts will appear here."; root.appendChild(empty); renderPricing(); return; }
     state.saved.forEach((d,index)=>{
       const card=document.createElement("div"); card.className="saved-card";
       const thumb=document.createElement("div"); thumb.className="saved-thumb";
@@ -445,6 +445,57 @@
       card.append(thumb,info,load,update,remove); root.appendChild(card);
     });
   }
+  function renderPricing() {
+    const root=$("pricingList"); if(!root)return; root.replaceChildren();
+    const priced=state.saved.filter(d=>d.priceAmount!==null&&d.priceAmount!==undefined&&d.priceAmount!=="").length;
+    $("pricingCount").textContent=state.saved.length;
+    $("pricedConceptCount").textContent=priced;
+    if(!state.saved.length){const empty=document.createElement("div");empty.className="saved-empty";empty.textContent="Save a concept first, then set its price here.";root.appendChild(empty);return;}
+    state.saved.forEach((design,index)=>{
+      const row=document.createElement("div");row.className="pricing-row";
+      const info=document.createElement("div");info.className="pricing-concept";
+      const title=document.createElement("b");title.textContent=design.title||design.name||"Untitled concept";
+      const details=document.createElement("small");details.textContent=(Array.isArray(design.items)?design.items.length:0)+" components · "+(design.priceAmount!==null&&design.priceAmount!==undefined&&design.priceAmount!==""?"Current price: "+new Intl.NumberFormat(undefined,{style:"currency",currency:design.priceCurrency||"AED",maximumFractionDigits:2}).format(Number(design.priceAmount)):"No price entered");
+      info.append(title,details);
+      const amount=document.createElement("input");amount.className="pricing-input";amount.type="number";amount.min="0";amount.step="0.01";amount.placeholder="Enter price";amount.value=design.priceAmount??"";amount.setAttribute("aria-label","Price for "+title.textContent);
+      const currency=document.createElement("select");currency.className="pricing-currency";currency.setAttribute("aria-label","Currency for "+title.textContent);
+      [["AED","AED · UAE dirham"],["USD","USD · US dollar"],["INR","INR · Indian rupee"],["EUR","EUR · Euro"],["GBP","GBP · Pound sterling"]].forEach(([value,label])=>{const option=document.createElement("option");option.value=value;option.textContent=label;currency.appendChild(option);});
+      currency.value=design.priceCurrency||"AED";
+      const save=document.createElement("button");save.type="button";save.className="pricing-save";save.textContent="Save price";
+      save.addEventListener("click",async()=>{
+        const raw=amount.value.trim();
+        if(raw!==""&&(!Number.isFinite(Number(raw))||Number(raw)<0)){toast("Enter a valid price of zero or more");amount.focus();return;}
+        const target=state.saved[index];if(!target)return;
+        const updated={...target,priceAmount:raw===""?null:Number(raw),priceCurrency:currency.value};
+        delete updated.cloudId;
+        if(state.user){
+          if(!target.cloudId){toast("This concept is not linked to your account");return;}
+          save.disabled=true;save.textContent="Saving…";
+          const {error}=await supabase.from("designs").update({design:updated,updated_at:new Date().toISOString()}).eq("id",target.cloudId).eq("user_id",state.user.id);
+          save.disabled=false;save.textContent="Save price";
+          if(error){console.error(error);toast("Could not save this price");return;}
+        }else{
+          try{const next=[...state.saved];next[index]=updated;localStorage.setItem("nova-horizon-designs",JSON.stringify(next));}
+          catch(error){console.error(error);toast("Could not save this price in this browser");return;}
+        }
+        state.saved[index]={...updated,...(target.cloudId?{cloudId:target.cloudId}:{})};
+        renderSaved();toast("Price saved for "+(target.title||"concept"));
+      });
+      row.append(info,amount,currency,save);root.appendChild(row);
+    });
+  }
+  function showStudioTab(tab) {
+    const pricing=tab==="pricing";
+    $("designerWorkspace").hidden=pricing;
+    $("pricingWorkspace").hidden=!pricing;
+    $("designerTab").classList.toggle("active",!pricing);
+    $("pricingTab").classList.toggle("active",pricing);
+    $("designerTab").setAttribute("aria-selected",String(!pricing));
+    $("pricingTab").setAttribute("aria-selected",String(pricing));
+    if(pricing)renderPricing();
+  }
+  $("designerTab").addEventListener("click",()=>showStudioTab("designer"));
+  $("pricingTab").addEventListener("click",()=>showStudioTab("pricing"));
   async function persistSaved() {
     if (!state.user) { localStorage.setItem("nova-horizon-designs",JSON.stringify(state.saved)); renderSaved(); return; }
     // Cloud saves are written individually by save/delete actions, never shared across users.
