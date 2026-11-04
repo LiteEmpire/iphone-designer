@@ -30,5 +30,5 @@ Open `index.html` in a modern browser, or use a local static server. No build st
 ## Notes
 
 - This is a fictional design playground, not a manufacturing CAD tool.
-- Signed-out concepts are stored in the current browser. When signed in with Google, saved concepts, prices, and specifications are stored in the user's account and can be accessed across devices.
+- Saving new concepts requires Google sign-in. Saved concepts, prices, and specifications are stored in the user's account and can be accessed across devices. Older browser-local concepts can be migrated into the account after sign-in.
 - Exported SVG files preserve the editable vector shapes.
