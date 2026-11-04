@@ -430,6 +430,8 @@
         if(!confirm("Replace “"+targetName+"” with the design currently on your canvas? This cannot be undone."))return;
         const current=serialize();
         current.title=targetName;
+        current.priceAmount=target.priceAmount??null;
+        current.priceCurrency=target.priceCurrency||"AED";
         if(state.user){
           if(!target.cloudId){toast("This saved design is local-only. Sign in to update cloud projects.");return;}
           const {error}=await supabase.from("designs").update({name:targetName,design:current,updated_at:new Date().toISOString()}).eq("id",target.cloudId).eq("user_id",state.user.id);
