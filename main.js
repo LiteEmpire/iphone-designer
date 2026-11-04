@@ -556,7 +556,21 @@
   });
   canvasArea.addEventListener("contextmenu",ev=>{if(state.view==="rear"&&!ev.target.closest("[data-id]"))closeBodyContextMenu();});
   document.addEventListener("pointerdown",ev=>{if(!ev.target.closest("#bodyContextMenu"))closeBodyContextMenu();});
-  document.addEventListener("keydown",ev=>{if(ev.key==="Escape")closeBodyContextMenu();});
+  document.addEventListener("keydown",ev=>{
+    if(ev.key==="Escape"){closeBodyContextMenu();return;}
+    const target=ev.target;
+    const editing=target instanceof HTMLElement && (target.isContentEditable || ["INPUT","TEXTAREA","SELECT"].includes(target.tagName));
+    if(editing || ev.altKey || ev.metaKey) return;
+    if(ev.ctrlKey && ev.key.toLowerCase()==="d"){
+      ev.preventDefault();
+      duplicateSelected();
+      return;
+    }
+    if(!ev.ctrlKey && ev.key==="Delete"){
+      ev.preventDefault();
+      deleteSelected();
+    }
+  });
   canvasArea.addEventListener("dragover",ev=>{ev.preventDefault();canvasArea.classList.add("drag-over");if(ev.dataTransfer)ev.dataTransfer.dropEffect="copy";});
   canvasArea.addEventListener("dragleave",ev=>{if(!canvasArea.contains(ev.relatedTarget))canvasArea.classList.remove("drag-over");});
   canvasArea.addEventListener("drop",ev=>{ev.preventDefault();canvasArea.classList.remove("drag-over");const type=ev.dataTransfer.getData("text/plain");if(!defaults[type])return;const item=makeItem(type);const point=canvasPoint({clientX:ev.clientX,clientY:ev.clientY});item.x=Math.max(0,Math.min(420-item.w,point.x-item.w/2));item.y=Math.max(0,Math.min(620-item.h,point.y-item.h/2));state.items.push(item);if(item.view!=="both"&&item.view!==state.view){switchView(item.view);state.selected=item.id;render();}else{state.selected=item.id;render();}toast(item.name+" added to frame");});
@@ -570,8 +584,18 @@
   $("sizeW").addEventListener("change",ev=>{const i=selectedItem();if(i&&!FIXED_TYPES.includes(i.type)&&i.type!=="motherboard"){i.w=Math.max(8,Math.min(PHONE_BOUNDS.x+PHONE_BOUNDS.w-i.x,Number(ev.target.value)||8));render();}});
   $("sizeH").addEventListener("change",ev=>{const i=selectedItem();if(i&&!FIXED_TYPES.includes(i.type)&&i.type!=="motherboard"){i.h=Math.max(8,Math.min(PHONE_BOUNDS.y+PHONE_BOUNDS.h-i.y,Number(ev.target.value)||8));render();}});
   $("rotation").addEventListener("input",ev=>{const i=selectedItem();if(i&&!FIXED_TYPES.includes(i.type)&&i.type!=="motherboard"){i.rotation=Number(ev.target.value);$("rotationValue").value=i.rotation+"°";render();}});
-  $("duplicateBtn").addEventListener("click",()=>{const i=selectedItem();if(!i){toast("Select a component first");return;}const copy={...i,id:state.nextId++,name:i.name+" copy",x:Math.min(420-i.w,i.x+18),y:Math.min(620-i.h,i.y+18),layer:Math.max(...state.items.map(n=>n.layer))+1};state.items.push(copy);selectItem(copy.id);render();toast("Component duplicated");});
-  $("deleteBtn").addEventListener("click",()=>{if(!state.selected){toast("Select a component first");return;}state.items=state.items.filter(i=>i.id!==state.selected);state.selected=null;render();toast("Component removed");});
+  function duplicateSelected(){
+    const i=selectedItem();
+    if(!i){toast("Select a component first");return;}
+    const copy={...i,id:state.nextId++,name:i.name+" copy",x:Math.min(420-i.w,i.x+18),y:Math.min(620-i.h,i.y+18),layer:Math.max(...state.items.map(n=>n.layer))+1};
+    state.items.push(copy);selectItem(copy.id);render();toast("Component duplicated");
+  }
+  function deleteSelected(){
+    if(!state.selected){toast("Select a component first");return;}
+    state.items=state.items.filter(i=>i.id!==state.selected);state.selected=null;render();toast("Component removed");
+  }
+  $("duplicateBtn").addEventListener("click",duplicateSelected);
+  $("deleteBtn").addEventListener("click",deleteSelected);
   $("bringFrontBtn").addEventListener("click",()=>reorder(state.selected,"front"));
   $("sendBackBtn").addEventListener("click",()=>reorder(state.selected,"back"));
   $("rearViewBtn").addEventListener("click",()=>switchView("rear"));
