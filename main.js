@@ -29,7 +29,8 @@
     flash: { name: "Flash", x: 181, y: 131, w: 13, h: 13, color: "#f4dca2", radius: 7, layer: 4 },
     logo: { name: "Nova logo", x: 191, y: 280, w: 44, h: 44, color: "#657084", radius: 22, layer: 5 },
     button: { name: "Side button", x: 302, y: 205, w: 8, h: 58, color: "#9da5b2", radius: 4, layer: 6 },
-    detail: { name: "Custom detail", x: 220, y: 350, w: 40, h: 24, color: "#91a8c7", radius: 8, layer: 7 }
+    detail: { name: "Custom detail", x: 220, y: 350, w: 40, h: 24, color: "#91a8c7", radius: 8, layer: 7 },
+    headphoneJack: { name: "3.5 mm Headphone Jack", x: 136, y: 293, w: 20, h: 20, color: "#252b38", radius: 10, layer: 12 }
   };
   const initial = ["body", "screen", "frontCamera", "camera", "lens", "lens", "flash", "logo", "button"];
   let toastTimer;
@@ -53,7 +54,7 @@
   function clampToPhone(item) { if (!item || item.type === "body" || item.type === "button") return; item.x=Math.max(PHONE_BOUNDS.x,Math.min(PHONE_BOUNDS.x+PHONE_BOUNDS.w-item.w,item.x)); item.y=Math.max(PHONE_BOUNDS.y,Math.min(PHONE_BOUNDS.y+PHONE_BOUNDS.h-item.h,item.y)); }
   function makeItem(type, overrides = {}) {
     const d = defaults[type] || defaults.detail;
-    const defaultView = ["body", "button"].includes(type) ? "both" : type === "screen" || type === "frontCamera" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : ["nc", "battery", "batteryMax", "batteryUltra", "motherboard", "cpu", "cpuPro", "gpu", "gpuPro", "ram", "ramPro", "ssd", "ssdPro"].includes(type) ? "inside" : state.view;
+    const defaultView = ["body", "button"].includes(type) ? "both" : type === "headphoneJack" ? "bottom" : type === "screen" || type === "frontCamera" ? "front" : ["camera", "lens", "flash", "logo"].includes(type) ? "rear" : ["nc", "battery", "batteryMax", "batteryUltra", "motherboard", "cpu", "cpuPro", "gpu", "gpuPro", "ram", "ramPro", "ssd", "ssdPro"].includes(type) ? "inside" : state.view;
     const parentBoard = INNER_TYPES.includes(type) ? state.items.find(i=>i.type==="motherboard") : null;
     const item = { id: state.nextId++, type, name: d.name, x: d.x, y: d.y, w: d.w, h: d.h, color: d.color, radius: d.radius || 0, rotation: 0, layer: type === "nc" ? -1 : state.items.length, view: defaultView, ...(parentBoard ? {parentId:parentBoard.id} : {}), ...overrides };
     if (type === "lens" && state.items.some(i => i.type === "lens")) {
@@ -64,10 +65,10 @@
     return item;
   }
   function addItem(type) {
-    const uniqueTypes = ["nc","motherboard","cpu","cpuPro","gpu","gpuPro","ram","ramPro","ssd","ssdPro"];
+    const uniqueTypes = ["nc","motherboard","cpu","cpuPro","gpu","gpuPro","ram","ramPro","ssd","ssdPro","headphoneJack"];
     const existing = state.items.some(item => item.type === type);
     if (uniqueTypes.includes(type) && existing) {
-      toast("Only one " + (type === "nc" ? "chassis" : type === "motherboard" ? "motherboard" : type.toUpperCase()) + " is allowed");
+      toast("Only one " + (type === "nc" ? "chassis" : type === "motherboard" ? "motherboard" : type === "headphoneJack" ? "headphone jack" : type.toUpperCase()) + " is allowed");
       return;
     }
     if (["battery","batteryMax","batteryUltra"].includes(type) && state.items.some(item => ["battery","batteryMax","batteryUltra"].includes(item.type))) {
@@ -113,7 +114,6 @@
       group.appendChild(el("rect",{x:edgeX+10,y:edgeY+5,width:edgeW-20,height:edgeH-10,rx:9,fill:"none",stroke:"#ffffff88","stroke-width":1}));
       if (state.view === "bottom") {
         group.appendChild(el("rect",{x:edgeX+edgeW/2-28,y:edgeY+5,width:56,height:edgeH-10,rx:4,fill:"#171c25",stroke:"#b8c1ce","stroke-width":1.5}));
-        for(let p=0;p<5;p++) group.appendChild(el("circle",{cx:edgeX+edgeW/2-48+p*12,cy:edgeY+edgeH/2,r:1.8,fill:"#202632"}));
       } else {
         group.appendChild(el("circle",{cx:edgeX+edgeW/2,cy:edgeY+edgeH/2,r:5,fill:"#111827",stroke:"#b8c1ce","stroke-width":1.5}));
       }
@@ -173,6 +173,12 @@
       const mt = el("text",{x:item.x+item.w/2,y:item.y+item.h-7,"text-anchor":"middle","font-family":"DM Sans, sans-serif","font-size":7,"font-weight":"700",fill:"#f0fdf4"}); mt.textContent="NMB1"; shape.appendChild(mt);
     } else if (["cpu","cpuPro","gpu","gpuPro","ram","ramPro","ssd","ssdPro"].includes(item.type)) {
       shape = el("rect", {x:item.x,y:item.y,width:item.w,height:item.h,rx:item.radius||8,fill:item.color,stroke:"#ffffff99","stroke-width":1.5});
+    } else if (item.type === "headphoneJack") {
+      shape = el("g");
+      const cx=item.x+item.w/2, cy=item.y+item.h/2, r=Math.min(item.w,item.h)/2;
+      shape.appendChild(el("circle",{cx,cy,r,fill:"#11151d",stroke:"#cbd5e1","stroke-width":2}));
+      shape.appendChild(el("circle",{cx,cy,r:r*.62,fill:"#030712",stroke:"#64748b","stroke-width":1.2}));
+      shape.appendChild(el("circle",{cx:cx-r*.16,cy:cy-r*.2,r:r*.13,fill:"#94a3b8","fill-opacity":.65}));
     } else if (item.type === "logo") {
       shape = el("text", { x: item.x + item.w/2, y: item.y + item.h*.72, "text-anchor":"middle", "font-family":"Space Grotesk, sans-serif", "font-size":Math.max(12,item.w*.65), "font-weight":"700", fill:item.color });
       shape.textContent = "N";
@@ -299,7 +305,8 @@
     // The exterior shell must not cover the chassis in the internal layout.
     // The NC chassis is the base layer; internal parts render above it.
     if (state.view === "inside" && ["body", "button"].includes(item.type)) return false;
-    if (state.view === "top" || state.view === "bottom") return ["body","button"].includes(item.type);
+    if (state.view === "top") return ["body","button"].includes(item.type);
+    if (state.view === "bottom") return ["body","button","headphoneJack"].includes(item.type);
     return side === "both" || side === state.view;
   }
   function selectItem(id) { state.selected = id; updateProperties(); }
