@@ -496,6 +496,28 @@
       const sub=document.createElement("small"); sub.textContent=(Array.isArray(d.items)?d.items.length:0)+" components";
       info.append(name,sub);
       const load=document.createElement("button"); load.textContent="Open"; load.addEventListener("click",()=>{loadDesign(d);toast("Design opened");window.scrollTo({top:0,behavior:"smooth"});});
+      const rename=document.createElement("button"); rename.type="button"; rename.textContent="Rename"; rename.className="text-button"; rename.setAttribute("aria-label","Rename "+(d.title||"saved concept")); rename.addEventListener("click",async()=>{
+        const target=state.saved[index];if(!target)return;
+        const oldName=target.title||target.name||"Untitled concept";
+        const entered=prompt("Enter a new name for this concept:",oldName);
+        if(entered===null)return;
+        const newName=entered.trim();
+        if(!newName){toast("Concept name cannot be empty");return;}
+        if(newName===oldName)return;
+        const updated={...target,title:newName,name:newName};
+        delete updated.cloudId;
+        rename.disabled=true;rename.textContent="Renaming…";
+        if(state.user){
+          if(!target.cloudId){rename.disabled=false;rename.textContent="Rename";toast("This concept is not linked to your account");return;}
+          const {error}=await supabase.from("designs").update({name:newName,design:updated,updated_at:new Date().toISOString()}).eq("id",target.cloudId).eq("user_id",state.user.id);
+          if(error){console.error(error);rename.disabled=false;rename.textContent="Rename";toast("Could not rename this concept");return;}
+        }else{
+          try{const next=[...state.saved];next[index]=updated;localStorage.setItem("nova-horizon-designs",JSON.stringify(next));}
+          catch(error){console.error(error);rename.disabled=false;rename.textContent="Rename";toast("Could not rename this concept in this browser");return;}
+        }
+        state.saved[index]={...updated,...(target.cloudId?{cloudId:target.cloudId}:{})};
+        renderSaved();toast("Concept renamed to "+newName);
+      });
       const update=document.createElement("button"); update.textContent="Update with current design"; update.className="text-button"; update.setAttribute("aria-label","Replace "+(d.title || "saved design")+" with the current canvas design"); update.addEventListener("click",async()=>{
         const target=state.saved[index];
         if(!target)return;
@@ -518,7 +540,7 @@
         renderSaved();toast("Project updated: "+targetName);
       });
       const remove=document.createElement("button"); remove.textContent="×"; remove.setAttribute("aria-label","Delete saved design"); remove.addEventListener("click",async()=>{const target=state.saved[index];if(state.user && target.cloudId){const {error}=await supabase.from("designs").delete().eq("id",target.cloudId);if(error){toast("Could not delete design");return;}}state.saved.splice(index,1);persistSaved();renderSaved();});
-      card.append(thumb,info,load,update,remove); root.appendChild(card);
+      card.append(thumb,info,load,update,rename,remove); root.appendChild(card);
     });
     renderPricing();
 
