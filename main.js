@@ -487,7 +487,7 @@
       card.append(thumb,info,load,update,remove); root.appendChild(card);
     });
     renderPricing();
-    renderSpecifications();
+
   }
   function renderPricing() {
     const root=$("pricingList"); if(!root)return; root.replaceChildren();
@@ -541,7 +541,7 @@
 
   $("designerTab").addEventListener("click",()=>showStudioTab("designer"));
   $("pricingTab").addEventListener("click",()=>showStudioTab("pricing"));
-  $("specificationsTab").addEventListener("click",()=>showStudioTab("specifications"));
+
   async function persistSaved() {
     if (!state.user) { localStorage.setItem("nova-horizon-designs",JSON.stringify(state.saved)); renderSaved(); return; }
     // Cloud saves are written individually by save/delete actions, never shared across users.
