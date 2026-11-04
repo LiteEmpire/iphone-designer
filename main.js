@@ -413,7 +413,7 @@
   function renderSaved() {
     $("savedCount").textContent = state.saved.length;
     const root = $("savedDesigns"); root.replaceChildren();
-    if (!state.saved.length) { const empty=document.createElement("div"); empty.className="saved-empty"; empty.textContent="Your saved Horizon concepts will appear here."; root.appendChild(empty); renderPricing(); return; }
+    if (!state.saved.length) { const empty=document.createElement("div"); empty.className="saved-empty"; empty.textContent="Your saved Horizon concepts will appear here."; root.appendChild(empty); renderPricing(); renderSpecifications(); return; }
     state.saved.forEach((d,index)=>{
       const card=document.createElement("div"); card.className="saved-card";
       const thumb=document.createElement("div"); thumb.className="saved-thumb";
