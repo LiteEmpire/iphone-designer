@@ -77,7 +77,18 @@
     clampToPhone(item);
     return item;
   }
+  const SINGLE_INSTANCE_TYPES = ["body","screen","frontCamera","camera","flash","logo","detail"];
+  function canAddSingleInstance(type) {
+    if (!SINGLE_INSTANCE_TYPES.includes(type)) return true;
+    if (state.items.some(item => item.type === type)) {
+      const names = {body:"phone body",screen:"display",frontCamera:"front camera",camera:"camera module",flash:"flash",logo:"Nova logo",detail:"custom detail"};
+      toast("Only one " + names[type] + " is allowed");
+      return false;
+    }
+    return true;
+  }
   function addItem(type) {
+    if (!canAddSingleInstance(type)) return;
     const uniqueTypes = ["nc","motherboard","cpu","cpuPro","gpu","gpuPro","ram","ramPro","ssd","ssdPro","headphoneJack"];
     const existing = state.items.some(item => item.type === type);
     if (uniqueTypes.includes(type) && existing) {
@@ -642,7 +653,7 @@
   });
   canvasArea.addEventListener("dragover",ev=>{ev.preventDefault();canvasArea.classList.add("drag-over");if(ev.dataTransfer)ev.dataTransfer.dropEffect="copy";});
   canvasArea.addEventListener("dragleave",ev=>{if(!canvasArea.contains(ev.relatedTarget))canvasArea.classList.remove("drag-over");});
-  canvasArea.addEventListener("drop",ev=>{ev.preventDefault();canvasArea.classList.remove("drag-over");const type=ev.dataTransfer.getData("text/plain");if(!defaults[type])return;const item=makeItem(type);const point=canvasPoint({clientX:ev.clientX,clientY:ev.clientY});item.x=Math.max(0,Math.min(420-item.w,point.x-item.w/2));item.y=Math.max(0,Math.min(620-item.h,point.y-item.h/2));state.items.push(item);if(item.view!=="both"&&item.view!==state.view){switchView(item.view);state.selected=item.id;render();}else{state.selected=item.id;render();}toast(item.name+" added to frame");});
+  canvasArea.addEventListener("drop",ev=>{ev.preventDefault();canvasArea.classList.remove("drag-over");const type=ev.dataTransfer.getData("text/plain");if(!defaults[type]||!canAddSingleInstance(type))return;const item=makeItem(type);const point=canvasPoint({clientX:ev.clientX,clientY:ev.clientY});item.x=Math.max(0,Math.min(420-item.w,point.x-item.w/2));item.y=Math.max(0,Math.min(620-item.h,point.y-item.h/2));state.items.push(item);if(item.view!=="both"&&item.view!==state.view){switchView(item.view);state.selected=item.id;render();}else{state.selected=item.id;render();}toast(item.name+" added to frame");});
   $("componentName").addEventListener("input",ev=>{const i=selectedItem();if(i){i.name=ev.target.value||"Component";$("selectionLabel").textContent=i.name+" selected";}});
   $("componentColor").addEventListener("input",ev=>setColor(ev.target.value));
   $("componentMaterial").addEventListener("change",ev=>{const item=selectedItem();if(!item)return;item.material=ev.target.value;render();});
@@ -656,6 +667,7 @@
   function duplicateSelected(){
     const i=selectedItem();
     if(!i){toast("Select a component first");return;}
+    if(!canAddSingleInstance(i.type))return;
     const copy={...i,id:state.nextId++,name:i.name+" copy",x:Math.min(420-i.w,i.x+18),y:Math.min(620-i.h,i.y+18),layer:Math.max(...state.items.map(n=>n.layer))+1};
     state.items.push(copy);selectItem(copy.id);render();toast("Component duplicated");
   }
